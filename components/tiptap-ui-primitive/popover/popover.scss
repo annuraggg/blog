@@ -18,6 +18,11 @@
   outline: none;
   transform-origin: var(--radix-popover-content-transform-origin);
   max-height: var(--radix-popover-content-available-height);
+  background-color: var(--tt-popover-bg-color);
+  border: 1px solid var(--tt-popover-border-color);
+  border-radius: var(--tt-radius-lg);
+  box-shadow: var(--tt-shadow-elevated-md);
+  color: var(--tt-popover-text-color);
 
   > * {
     max-height: var(--radix-popover-content-available-height);
