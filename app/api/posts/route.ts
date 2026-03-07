@@ -23,9 +23,7 @@ export async function GET(req: NextRequest) {
     if (series) filter.series = series;
 
     const sortOptions: Record<string, 1 | -1> =
-      sort === "popular"
-        ? { viewCount: -1 }
-        : { publishDate: -1 };
+      sort === "popular" ? { viewCount: -1 } : { publishDate: -1 };
 
     const skip = (page - 1) * limit;
     const [posts, total] = await Promise.all([
@@ -43,7 +41,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ posts, total, page, limit });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
@@ -58,6 +59,14 @@ export async function POST(req: NextRequest) {
     await connectDB();
     const body = await req.json();
 
+    // Require cover image when publishing
+    if (body.status === "published" && !body.coverImage) {
+      return NextResponse.json(
+        { error: "A cover image is required to publish." },
+        { status: 400 },
+      );
+    }
+
     // Auto-generate slug if not provided
     if (!body.slug && body.title) {
       const slugify = (await import("slugify")).default;
@@ -68,17 +77,19 @@ export async function POST(req: NextRequest) {
       ...body,
       author: session.user.id,
       readingTime: calculateReadingTime(body.body ?? ""),
-      publishDate:
-        body.publishDate
-          ? new Date(body.publishDate)
-          : body.status === "published"
-            ? new Date()
-            : undefined,
+      publishDate: body.publishDate
+        ? new Date(body.publishDate)
+        : body.status === "published"
+          ? new Date()
+          : undefined,
     });
 
     return NextResponse.json(post, { status: 201 });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

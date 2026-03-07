@@ -286,7 +286,7 @@ export default function PostEditor({ post }: Props) {
         </div>
 
         {/* Sidebar */}
-        <div className="w-72 xl:w-80 shrink-0">
+        <div className="w-72 xl:w-80 shrink-0 overflow-y-auto  h-screen">
           <div className="sticky top-4 overflow-y-auto pr-1">
             {/* Title / Slug / Subheading */}
             <div className="bg-white dark:bg-zinc-900 py-6 p-4 space-y-3">
