@@ -22,7 +22,7 @@ export default async function AdminPostsPage() {
   };
 
   return (
-    <div>
+    <div className="p-6">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Posts</h1>
         <Link

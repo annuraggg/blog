@@ -12,7 +12,7 @@ export default async function AdminCommentsPage() {
     .lean();
 
   return (
-    <div>
+    <div className="p-6">
       <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-8">Comments</h1>
       <CommentsManager initialComments={JSON.parse(JSON.stringify(comments))} />
     </div>

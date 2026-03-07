@@ -15,7 +15,7 @@ export default async function AdminSeriesPage() {
   ]);
 
   return (
-    <div>
+    <div className="p-6">
       <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-8">Series</h1>
       <SeriesManager
         initialSeries={JSON.parse(JSON.stringify(allSeries))}
