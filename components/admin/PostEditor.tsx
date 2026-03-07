@@ -188,35 +188,8 @@ export default function PostEditor({ post }: Props) {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Editor */}
-          <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
-            <div>
-              <label className={labelCls}>Title *</label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => handleTitleChange(e.target.value)}
-                required
-                placeholder="Post title"
-                className={inputCls}
-              />
-            </div>
-
-            <div>
-              <label className={labelCls}>Subheading</label>
-              <input
-                type="text"
-                value={subheading}
-                onChange={(e) => setSubheading(e.target.value)}
-                placeholder="Optional subheading"
-                className={inputCls}
-              />
-            </div>
-
-            <div>
-              <label className={labelCls}>Body *</label>
-              <Editor />
-            </div>
+          <div className="col-span-2">
+            <Editor />
           </div>
 
           {/* Sidebar */}
