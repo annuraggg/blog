@@ -44,7 +44,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
       {/* Main content */}
       <main className="flex-1 overflow-auto">
-        <div className="p-8">{children}</div>
+        <div>{children}</div>
       </main>
     </div>
   );

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Editor from "./Editor";
+import dynamic from "next/dynamic";
+
+const RichEditor = dynamic(() => import("./Editor"), { ssr: false });
 
 interface SerializedPost {
   _id?: string;
@@ -52,6 +54,12 @@ function slugify(value: string): string {
     .replace(/-+/g, "-");
 }
 
+interface SeriesOption {
+  _id: string;
+  title: string;
+  slug: string;
+}
+
 export default function PostEditor({ post }: Props) {
   const router = useRouter();
   const isEdit = Boolean(post?._id);
@@ -92,6 +100,22 @@ export default function PostEditor({ post }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Series list for dropdown
+  const [seriesList, setSeriesList] = useState<SeriesOption[]>([]);
+  useEffect(() => {
+    fetch("/api/series")
+      .then((r) => r.json())
+      .then((data: SeriesOption[]) => setSeriesList(data))
+      .catch(() => {
+        /* non-critical */
+      });
+  }, []);
+
+  // Cover image upload
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [coverUrlInput, setCoverUrlInput] = useState(post?.coverImage ?? "");
+  const coverFileRef = useRef<HTMLInputElement>(null);
+
   const handleTitleChange = useCallback(
     (value: string) => {
       setTitle(value);
@@ -107,10 +131,74 @@ export default function PostEditor({ post }: Props) {
     setSlugManuallyEdited(true);
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Upload cover image file to R2
+  const handleCoverFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      e.target.value = "";
+      setCoverUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("alt", file.name);
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          throw new Error((d as { error?: string }).error ?? "Upload failed");
+        }
+        const d = (await res.json()) as { url: string };
+        setCoverImage(d.url);
+        setCoverUrlInput(d.url);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Cover image upload failed",
+        );
+      } finally {
+        setCoverUploading(false);
+      }
+    },
+    [],
+  );
+
+  // Proxy an external cover image URL through R2
+  const handleCoverUrlSubmit = useCallback(async () => {
+    const url = coverUrlInput.trim();
+    if (!url) return;
+    setCoverUploading(true);
+    try {
+      const res = await fetch("/api/upload-cover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error((d as { error?: string }).error ?? "URL upload failed");
+      }
+      const d = (await res.json()) as { url: string };
+      setCoverImage(d.url);
+      setCoverUrlInput(d.url);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Cover image URL upload failed",
+      );
+    } finally {
+      setCoverUploading(false);
+    }
+  }, [coverUrlInput]);
+
+  const handleSubmit = async (submitStatus?: SerializedPost["status"]) => {
+    const effectiveStatus = submitStatus ?? status;
     if (!body.trim()) {
       setError("Body is required.");
+      return;
+    }
+    if (effectiveStatus === "published" && !coverImage.trim()) {
+      setError("A cover image is required before publishing.");
       return;
     }
 
@@ -135,11 +223,15 @@ export default function PostEditor({ post }: Props) {
       seoTitle: seoTitle || undefined,
       seoDescription: seoDescription || undefined,
       canonicalUrl: canonicalUrl || undefined,
-      status,
+      status: effectiveStatus,
       scheduledFor:
-        status === "scheduled" && scheduledFor ? scheduledFor : undefined,
+        effectiveStatus === "scheduled" && scheduledFor
+          ? scheduledFor
+          : undefined,
       publishDate:
-        status === "published" && publishDate ? publishDate : undefined,
+        effectiveStatus === "published" && publishDate
+          ? publishDate
+          : undefined,
       sendNewsletter,
     };
 
@@ -156,11 +248,12 @@ export default function PostEditor({ post }: Props) {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(
-          data.error ?? `Request failed with status ${res.status}`,
+          (data as { error?: string }).error ??
+            `Request failed with status ${res.status}`,
         );
       }
 
-      const data = await res.json();
+      const data = (await res.json()) as { _id?: string; id?: string };
       router.push(`/admin/posts/${data._id ?? data.id}/edit`);
       router.refresh();
     } catch (err) {
@@ -180,23 +273,222 @@ export default function PostEditor({ post }: Props) {
 
   return (
     <div>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {error && (
-          <div className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400">
-            {error}
-          </div>
-        )}
+      {error && (
+        <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400">
+          {error}
+        </div>
+      )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="col-span-2">
-            <Editor />
-          </div>
+      <div className="flex items-start">
+        {/* Main editor area */}
+        <div className="flex-1 min-w-0 overflow-y-auto h-full">
+          <RichEditor value={body} onChange={setBody} />
+        </div>
 
-          {/* Sidebar */}
-          <div className="space-y-4">
+        {/* Sidebar */}
+        <div className="w-72 xl:w-80 shrink-0">
+          <div className="sticky top-4 overflow-y-auto pr-1">
+            {/* Title / Slug / Subheading */}
+            <div className="bg-white dark:bg-zinc-900 py-6 p-4 space-y-3">
+              <div>
+                <label className={labelCls}>Title *</label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  required
+                  placeholder="Post title"
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Slug *</label>
+                <input
+                  type="text"
+                  value={slug}
+                  onChange={(e) => handleSlugChange(e.target.value)}
+                  required
+                  placeholder="post-slug"
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Subheading</label>
+                <input
+                  type="text"
+                  value={subheading}
+                  onChange={(e) => setSubheading(e.target.value)}
+                  placeholder="Optional subheading"
+                  className={inputCls}
+                />
+              </div>
+            </div>
+
+            {/* Cover Image */}
+            <div className="bg-white dark:bg-zinc-900 py-6 p-4 space-y-3">
+              <h2 className="text-xs font-semibold text-zinc-900 dark:text-white uppercase tracking-wide">
+                Cover Image
+              </h2>
+
+              {/* File upload */}
+              <div>
+                <label className={labelCls}>Upload file</label>
+                <input
+                  ref={coverFileRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={handleCoverFileChange}
+                />
+                <button
+                  type="button"
+                  onClick={() => coverFileRef.current?.click()}
+                  disabled={coverUploading}
+                  className="w-full px-3 py-2 text-sm border border-dashed border-zinc-300 dark:border-zinc-600 rounded-lg text-zinc-500 dark:text-zinc-400 hover:border-zinc-500 dark:hover:border-zinc-400 transition-colors disabled:opacity-50"
+                >
+                  {coverUploading ? "Uploading…" : "Choose image file"}
+                </button>
+              </div>
+
+              {/* URL input */}
+              <div>
+                <label className={labelCls}>Or paste URL</label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={coverUrlInput}
+                    onChange={(e) => setCoverUrlInput(e.target.value)}
+                    placeholder="https://..."
+                    className={`${inputCls} flex-1`}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCoverUrlSubmit}
+                    disabled={coverUploading || !coverUrlInput.trim()}
+                    className="px-3 py-2 text-xs bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-40 whitespace-nowrap"
+                  >
+                    Use URL
+                  </button>
+                </div>
+              </div>
+
+              {/* Preview */}
+              {coverImage && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={coverImage}
+                  alt={coverImageAlt || "Cover preview"}
+                  className="w-full rounded-lg object-cover aspect-video"
+                />
+              )}
+
+              <div>
+                <label className={labelCls}>Alt Text</label>
+                <input
+                  type="text"
+                  value={coverImageAlt}
+                  onChange={(e) => setCoverImageAlt(e.target.value)}
+                  placeholder="Describe the image"
+                  className={inputCls}
+                />
+              </div>
+            </div>
+
+            {/* Tags */}
+            <div className="bg-white dark:bg-zinc-900 py-6 p-4 space-y-3">
+              <h2 className="text-xs font-semibold text-zinc-900 dark:text-white uppercase tracking-wide">
+                Tags
+              </h2>
+              <div>
+                <label className={labelCls}>Tags (comma-separated)</label>
+                <input
+                  type="text"
+                  value={tagsInput}
+                  onChange={(e) => setTagsInput(e.target.value)}
+                  placeholder="nextjs, react, typescript"
+                  className={inputCls}
+                />
+              </div>
+            </div>
+
+            {/* Series */}
+            <div className="bg-white dark:bg-zinc-900 py-6 p-4 space-y-3">
+              <h2 className="text-xs font-semibold text-zinc-900 dark:text-white uppercase tracking-wide">
+                Series
+              </h2>
+              <div>
+                <label className={labelCls}>Series</label>
+                <select
+                  value={seriesId}
+                  onChange={(e) => setSeriesId(e.target.value)}
+                  className={inputCls}
+                >
+                  <option value="">— None —</option>
+                  {seriesList.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {seriesId && (
+                <div>
+                  <label className={labelCls}>Order in Series</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={seriesOrder}
+                    onChange={(e) => setSeriesOrder(e.target.value)}
+                    placeholder="1"
+                    className={inputCls}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* SEO */}
+            <div className="bg-white dark:bg-zinc-900 py-6 p-4 space-y-3">
+              <h2 className="text-xs font-semibold text-zinc-900 dark:text-white uppercase tracking-wide">
+                SEO
+              </h2>
+              <div>
+                <label className={labelCls}>SEO Title</label>
+                <input
+                  type="text"
+                  value={seoTitle}
+                  onChange={(e) => setSeoTitle(e.target.value)}
+                  placeholder="Overrides title in search results"
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>SEO Description</label>
+                <textarea
+                  value={seoDescription}
+                  onChange={(e) => setSeoDescription(e.target.value)}
+                  placeholder="Meta description (150–160 chars recommended)"
+                  rows={3}
+                  className={`${inputCls} resize-none`}
+                />
+                <p className="text-xs text-zinc-400 mt-1">
+                  {seoDescription.length} / 160
+                </p>
+              </div>
+              <div>
+                <label className={labelCls}>Canonical URL</label>
+                <input
+                  type="url"
+                  value={canonicalUrl}
+                  onChange={(e) => setCanonicalUrl(e.target.value)}
+                  placeholder="https://example.com/original-post"
+                  className={inputCls}
+                />
+              </div>
+            </div>
+
             {/* Publish */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
+            <div className="bg-white dark:bg-zinc-900 py-6 p-4 space-y-3">
+              <h2 className="text-xs font-semibold text-zinc-900 dark:text-white uppercase tracking-wide">
                 Publish
               </h2>
               <div>
@@ -255,172 +547,28 @@ export default function PostEditor({ post }: Props) {
                 </span>
               </label>
 
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
-              >
-                {saving ? "Saving…" : isEdit ? "Update Post" : "Create Post"}
-              </button>
-            </div>
-
-            {/* Cover image */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
-                Cover Image
-              </h2>
-              <div>
-                <label className={labelCls}>Image URL</label>
-                <input
-                  type="url"
-                  value={coverImage}
-                  onChange={(e) => setCoverImage(e.target.value)}
-                  placeholder="https://..."
-                  className={inputCls}
-                />
+              <div className="flex flex-col gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleSubmit("published")}
+                  disabled={saving}
+                  className="w-full px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {saving ? "Saving…" : "Publish"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSubmit("draft")}
+                  disabled={saving}
+                  className="w-full px-4 py-2 bg-transparent border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-medium rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                >
+                  {saving ? "Saving…" : "Save Draft"}
+                </button>
               </div>
-              {coverImage && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={coverImage}
-                  alt={coverImageAlt || "Cover preview"}
-                  className="w-full rounded-lg object-cover aspect-video"
-                />
-              )}
-              <div>
-                <label className={labelCls}>Alt Text</label>
-                <input
-                  type="text"
-                  value={coverImageAlt}
-                  onChange={(e) => setCoverImageAlt(e.target.value)}
-                  placeholder="Describe the image"
-                  className={inputCls}
-                />
-              </div>
-            </div>
-
-            {/* Tags */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
-                Tags
-              </h2>
-              <div>
-                <label className={labelCls}>Tags (comma-separated)</label>
-                <input
-                  type="text"
-                  value={tagsInput}
-                  onChange={(e) => setTagsInput(e.target.value)}
-                  placeholder="nextjs, react, typescript"
-                  className={inputCls}
-                />
-              </div>
-            </div>
-
-            {/* Series */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
-                Series
-              </h2>
-              <div>
-                <label className={labelCls}>Series ID</label>
-                <input
-                  type="text"
-                  value={seriesId}
-                  onChange={(e) => setSeriesId(e.target.value)}
-                  placeholder="MongoDB ObjectId of series"
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>Order in Series</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={seriesOrder}
-                  onChange={(e) => setSeriesOrder(e.target.value)}
-                  placeholder="1"
-                  className={inputCls}
-                />
-              </div>
-            </div>
-
-            {/* SEO */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
-                SEO
-              </h2>
-              <div>
-                <label className={labelCls}>SEO Title</label>
-                <input
-                  type="text"
-                  value={seoTitle}
-                  onChange={(e) => setSeoTitle(e.target.value)}
-                  placeholder="Overrides title in search results"
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>SEO Description</label>
-                <textarea
-                  value={seoDescription}
-                  onChange={(e) => setSeoDescription(e.target.value)}
-                  placeholder="Meta description (150–160 chars recommended)"
-                  rows={3}
-                  className={`${inputCls} resize-none`}
-                />
-                <p className="text-xs text-zinc-400 mt-1">
-                  {seoDescription.length} / 160
-                </p>
-              </div>
-              <div>
-                <label className={labelCls}>Canonical URL</label>
-                <input
-                  type="url"
-                  value={canonicalUrl}
-                  onChange={(e) => setCanonicalUrl(e.target.value)}
-                  placeholder="https://example.com/original-post"
-                  className={inputCls}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className={labelCls}>Title *</label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => handleTitleChange(e.target.value)}
-                required
-                placeholder="Post title"
-                className={inputCls}
-              />
-            </div>
-
-            <div>
-              <label className={labelCls}>Subheading</label>
-              <input
-                type="text"
-                value={subheading}
-                onChange={(e) => setSubheading(e.target.value)}
-                placeholder="Optional subheading"
-                className={inputCls}
-              />
-            </div>
-
-            <div>
-              <label className={labelCls}>Slug *</label>
-              <input
-                type="text"
-                value={slug}
-                onChange={(e) => handleSlugChange(e.target.value)}
-                required
-                placeholder="post-slug"
-                className={inputCls}
-              />
             </div>
           </div>
         </div>
-      </form>
+      </div>
     </div>
   );
 }
