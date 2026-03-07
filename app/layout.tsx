@@ -1,14 +1,20 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
+import { Lora } from "next/font/google";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | The Blog",
-    default: "The Blog",
+    template: "%s | " + process.env.NEXT_PUBLIC_SITE_NAME,
+    default: process.env.NEXT_PUBLIC_SITE_NAME || "",
   },
-  description: "Thoughtful essays on technology and building things.",
+  description: process.env.NEXT_PUBLIC_SITE_DESCRIPTION || "",
 };
+
+const lora = Lora({
+  subsets: ["latin"],
+  variable: "--font-lora",
+});
 
 export default function RootLayout({
   children,
@@ -17,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased font-sans">
+      <body className={lora.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
         </ThemeProvider>

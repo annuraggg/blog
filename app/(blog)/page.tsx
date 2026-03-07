@@ -3,6 +3,7 @@ import Image from "next/image";
 import { connectDB } from "@/lib/db";
 import Post from "@/lib/models/Post";
 import { formatDistanceToNow } from "date-fns";
+import User from "@/lib/models/User";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,9 @@ export default async function HomePage() {
     .limit(10)
     .populate("author", "name image")
     .populate("series", "title slug")
-    .select("title subheading slug coverImage tags readingTime publishDate author series")
+    .select(
+      "title subheading slug coverImage tags readingTime publishDate author series",
+    )
     .lean();
 
   return (
@@ -42,6 +45,7 @@ export default async function HomePage() {
                     width={192}
                     height={128}
                     className="rounded-lg object-cover w-full h-32 group-hover:opacity-90 transition-opacity"
+                    unoptimized
                   />
                 </Link>
               </div>
@@ -70,7 +74,11 @@ export default async function HomePage() {
               )}
               <div className="flex items-center gap-3 text-xs text-zinc-400">
                 {post.publishDate && (
-                  <span>{formatDistanceToNow(new Date(post.publishDate), { addSuffix: true })}</span>
+                  <span>
+                    {formatDistanceToNow(new Date(post.publishDate), {
+                      addSuffix: true,
+                    })}
+                  </span>
                 )}
                 <span>·</span>
                 <span>{post.readingTime} min read</span>

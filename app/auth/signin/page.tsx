@@ -36,7 +36,7 @@ export default function SignInPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <Link href="/" className="text-xl font-bold text-zinc-900 dark:text-white">
-            The Blog
+            {process.env.NEXT_PUBLIC_SITE_NAME}
           </Link>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2">Sign in to your account</p>
         </div>

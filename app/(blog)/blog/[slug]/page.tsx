@@ -166,7 +166,7 @@ export default async function BlogPostPage({ params }: Props) {
               alt={post.coverImageAlt ?? post.title}
               width={800}
               height={400}
-              className="w-full rounded-none md:rounded-xl object-cover max-h-96"
+              className="w-full rounded-none md:rounded-xl object-cover max-h-96"unoptimized
             />
           </div>
         )}

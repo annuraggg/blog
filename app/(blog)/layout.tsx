@@ -1,28 +1,11 @@
 import { ReactNode } from "react";
-import Link from "next/link";
-import ThemeToggle from "@/components/ThemeToggle";
 import NewsletterForm from "@/components/NewsletterForm";
+import Navbar from "@/components/blog/Navbar";
 
 export default function BlogLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="text-lg font-bold text-zinc-900 dark:text-white">
-            The Blog
-          </Link>
-          <nav className="flex items-center gap-6">
-            <Link href="/blog" className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
-              Articles
-            </Link>
-            <Link href="/series" className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
-              Series
-            </Link>
-            <ThemeToggle />
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Main */}
       <main className="max-w-4xl mx-auto px-4 py-12">{children}</main>

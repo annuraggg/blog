@@ -8,7 +8,13 @@ import { formatDistanceToNow } from "date-fns";
 export const dynamic = "force-dynamic";
 
 interface Props {
-  searchParams: Promise<{ q?: string; tag?: string; series?: string; sort?: string; page?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    tag?: string;
+    series?: string;
+    sort?: string;
+    page?: string;
+  }>;
 }
 
 export default async function BlogPage({ searchParams }: Props) {
@@ -33,7 +39,9 @@ export default async function BlogPage({ searchParams }: Props) {
       .limit(limit)
       .populate("author", "name image")
       .populate("series", "title slug")
-      .select("title subheading slug coverImage tags readingTime publishDate author series viewCount")
+      .select(
+        "title subheading slug coverImage tags readingTime publishDate author series viewCount",
+      )
       .lean(),
     Post.countDocuments(filter),
     Series.find({}).select("title slug").lean(),
@@ -44,7 +52,9 @@ export default async function BlogPage({ searchParams }: Props) {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-zinc-900 dark:text-white mb-6">All Articles</h1>
+        <h1 className="text-3xl font-bold text-zinc-900 dark:text-white mb-6">
+          All Articles
+        </h1>
 
         {/* Search */}
         <form className="flex gap-2 mb-4">
@@ -96,13 +106,16 @@ export default async function BlogPage({ searchParams }: Props) {
                   width={400}
                   height={200}
                   className="w-full h-48 object-cover group-hover:opacity-90 transition-opacity"
+                  unoptimized
                 />
               </Link>
             )}
             <div className="p-5">
               <div className="flex flex-wrap gap-1 mb-2">
                 {post.tags.slice(0, 3).map((tag) => (
-                  <span key={tag} className="text-xs text-zinc-400">#{tag}</span>
+                  <span key={tag} className="text-xs text-zinc-400">
+                    #{tag}
+                  </span>
                 ))}
               </div>
               <Link href={`/blog/${post.slug}`}>
@@ -117,7 +130,11 @@ export default async function BlogPage({ searchParams }: Props) {
               )}
               <div className="flex items-center gap-2 text-xs text-zinc-400">
                 {post.publishDate && (
-                  <span>{formatDistanceToNow(new Date(post.publishDate), { addSuffix: true })}</span>
+                  <span>
+                    {formatDistanceToNow(new Date(post.publishDate), {
+                      addSuffix: true,
+                    })}
+                  </span>
                 )}
                 <span>·</span>
                 <span>{post.readingTime} min read</span>
@@ -145,7 +162,9 @@ export default async function BlogPage({ searchParams }: Props) {
       )}
 
       {posts.length === 0 && (
-        <div className="text-center py-20 text-zinc-400">No articles found.</div>
+        <div className="text-center py-20 text-zinc-400">
+          No articles found.
+        </div>
       )}
     </div>
   );
