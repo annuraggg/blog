@@ -9,6 +9,8 @@ import Comments from "@/components/Comments";
 import LikeButton from "@/components/LikeButton";
 import { format } from "date-fns";
 import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import rehypeRaw from "rehype-raw";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -190,10 +192,15 @@ export default async function BlogPostPage({ params }: Props) {
         )}
 
         {/* MDX Content */}
-        <div className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-bold prose-code:font-mono prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800">
+        <div className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-bold prose-code:font-mono prose-pre:bg-zinc-50 dark:prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-200 dark:prose-pre:border-zinc-800">
           <MDXRemote
             source={post.body}
-            options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
+            options={{
+              mdxOptions: {
+                remarkPlugins: [remarkGfm],
+                rehypePlugins: [rehypeRaw, rehypeHighlight],
+              },
+            }}
           />
         </div>
 

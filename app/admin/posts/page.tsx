@@ -3,6 +3,7 @@ import Link from "next/link";
 import { connectDB } from "@/lib/db";
 import Post from "@/lib/models/Post";
 import { formatDistanceToNow } from "date-fns";
+import PostDeleteButton from "@/components/admin/PostDeleteButton";
 
 export default async function AdminPostsPage() {
   await connectDB();
@@ -67,12 +68,15 @@ export default async function AdminPostsPage() {
                   {formatDistanceToNow(new Date(post.updatedAt), { addSuffix: true })}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <Link
-                    href={`/admin/posts/${String(post._id)}/edit`}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    Edit
-                  </Link>
+                  <div className="flex items-center justify-end gap-3">
+                    <Link
+                      href={`/admin/posts/${String(post._id)}/edit`}
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      Edit
+                    </Link>
+                    <PostDeleteButton postId={String(post._id)} />
+                  </div>
                 </td>
               </tr>
             ))}
