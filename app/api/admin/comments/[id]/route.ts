@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/db";
 import Comment from "@/lib/models/Comment";
 import { auth } from "@/lib/auth";
 
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

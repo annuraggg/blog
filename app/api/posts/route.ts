@@ -68,6 +68,12 @@ export async function POST(req: NextRequest) {
       ...body,
       author: session.user.id,
       readingTime: calculateReadingTime(body.body ?? ""),
+      publishDate:
+        body.publishDate
+          ? new Date(body.publishDate)
+          : body.status === "published"
+            ? new Date()
+            : undefined,
     });
 
     return NextResponse.json(post, { status: 201 });

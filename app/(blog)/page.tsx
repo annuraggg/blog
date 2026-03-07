@@ -1,3 +1,4 @@
+import "@/lib/models";
 import { connectDB } from "@/lib/db";
 import Post from "@/lib/models/Post";
 import FeaturedPost from "./FeaturedPost";

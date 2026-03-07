@@ -2,6 +2,11 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+import { SimpleEditor } from "../tiptap-templates/simple/simple-editor";
+import Editor from "./Editor";
+
+const RichEditor = dynamic(() => import("./RichEditor"), { ssr: false });
 
 interface SerializedPost {
   _id?: string;
@@ -17,7 +22,13 @@ interface SerializedPost {
   seoTitle?: string;
   seoDescription?: string;
   canonicalUrl?: string;
-  status: "draft" | "scheduled" | "published" | "archived" | "private" | "unlisted";
+  status:
+    | "draft"
+    | "scheduled"
+    | "published"
+    | "archived"
+    | "private"
+    | "unlisted";
   publishDate?: string;
   scheduledFor?: string;
   sendNewsletter: boolean;
@@ -57,15 +68,30 @@ export default function PostEditor({ post }: Props) {
   const [body, setBody] = useState(post?.body ?? "");
   const [tagsInput, setTagsInput] = useState((post?.tags ?? []).join(", "));
   const [seriesId, setSeriesId] = useState(post?.series?._id ?? "");
-  const [seriesOrder, setSeriesOrder] = useState(String(post?.seriesOrder ?? ""));
-  const [seoTitle, setSeoTitle] = useState(post?.seoTitle ?? "");
-  const [seoDescription, setSeoDescription] = useState(post?.seoDescription ?? "");
-  const [canonicalUrl, setCanonicalUrl] = useState(post?.canonicalUrl ?? "");
-  const [status, setStatus] = useState<SerializedPost["status"]>(post?.status ?? "draft");
-  const [scheduledFor, setScheduledFor] = useState(
-    post?.scheduledFor ? new Date(post.scheduledFor).toISOString().slice(0, 16) : ""
+  const [seriesOrder, setSeriesOrder] = useState(
+    String(post?.seriesOrder ?? ""),
   );
-  const [sendNewsletter, setSendNewsletter] = useState(post?.sendNewsletter ?? false);
+  const [seoTitle, setSeoTitle] = useState(post?.seoTitle ?? "");
+  const [seoDescription, setSeoDescription] = useState(
+    post?.seoDescription ?? "",
+  );
+  const [canonicalUrl, setCanonicalUrl] = useState(post?.canonicalUrl ?? "");
+  const [status, setStatus] = useState<SerializedPost["status"]>(
+    post?.status ?? "draft",
+  );
+  const [scheduledFor, setScheduledFor] = useState(
+    post?.scheduledFor
+      ? new Date(post.scheduledFor).toISOString().slice(0, 16)
+      : "",
+  );
+  const [publishDate, setPublishDate] = useState(
+    post?.publishDate
+      ? new Date(post.publishDate).toISOString().slice(0, 16)
+      : "",
+  );
+  const [sendNewsletter, setSendNewsletter] = useState(
+    post?.sendNewsletter ?? false,
+  );
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -77,7 +103,7 @@ export default function PostEditor({ post }: Props) {
         setSlug(slugify(value));
       }
     },
-    [slugManuallyEdited]
+    [slugManuallyEdited],
   );
 
   const handleSlugChange = useCallback((value: string) => {
@@ -87,6 +113,10 @@ export default function PostEditor({ post }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!body.trim()) {
+      setError("Body is required.");
+      return;
+    }
     setSaving(true);
     setError("");
 
@@ -109,7 +139,10 @@ export default function PostEditor({ post }: Props) {
       seoDescription: seoDescription || undefined,
       canonicalUrl: canonicalUrl || undefined,
       status,
-      scheduledFor: status === "scheduled" && scheduledFor ? scheduledFor : undefined,
+      scheduledFor:
+        status === "scheduled" && scheduledFor ? scheduledFor : undefined,
+      publishDate:
+        status === "published" && publishDate ? publishDate : undefined,
       sendNewsletter,
     };
 
@@ -124,14 +157,18 @@ export default function PostEditor({ post }: Props) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? `Request failed with status ${res.status}`);
+        throw new Error(
+          data.error ?? `Request failed with status ${res.status}`,
+        );
       }
 
       const data = await res.json();
       router.push(`/admin/posts/${data._id ?? data.id}/edit`);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred.");
+      setError(
+        err instanceof Error ? err.message : "An unexpected error occurred.",
+      );
     } finally {
       setSaving(false);
     }
@@ -139,14 +176,11 @@ export default function PostEditor({ post }: Props) {
 
   const inputCls =
     "w-full px-3 py-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-500";
-  const labelCls = "block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1";
+  const labelCls =
+    "block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1";
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-8">
-        {isEdit ? "Edit Post" : "New Post"}
-      </h1>
-
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
           <div className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400">
@@ -156,7 +190,12 @@ export default function PostEditor({ post }: Props) {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main content */}
-          <div className="lg:col-span-2 space-y-4">
+
+          <div className="bg-white dark:bg-zinc-900 rounded-xl w-[50vw] border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
+            <Editor />
+          </div>
+
+          {/* <div className="lg:col-span-2 space-y-4">
             <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
               <div>
                 <label className={labelCls}>Title *</label>
@@ -182,77 +221,26 @@ export default function PostEditor({ post }: Props) {
               </div>
 
               <div>
-                <label className={labelCls}>Slug *</label>
-                <input
-                  type="text"
-                  value={slug}
-                  onChange={(e) => handleSlugChange(e.target.value)}
-                  required
-                  placeholder="post-slug"
-                  className={inputCls}
-                />
-              </div>
-
-              <div>
-                <label className={labelCls}>Body (Markdown) *</label>
-                <textarea
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  required
-                  placeholder="Write your post in Markdown..."
-                  rows={24}
-                  className={`${inputCls} font-mono resize-y`}
-                />
+                <label className={labelCls}>Body *</label>
+                <RichEditor value={body} onChange={setBody} />
               </div>
             </div>
-
-            {/* SEO */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">SEO</h2>
-              <div>
-                <label className={labelCls}>SEO Title</label>
-                <input
-                  type="text"
-                  value={seoTitle}
-                  onChange={(e) => setSeoTitle(e.target.value)}
-                  placeholder="Overrides title in search results"
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>SEO Description</label>
-                <textarea
-                  value={seoDescription}
-                  onChange={(e) => setSeoDescription(e.target.value)}
-                  placeholder="Meta description (150–160 chars recommended)"
-                  rows={3}
-                  className={`${inputCls} resize-none`}
-                />
-                <p className="text-xs text-zinc-400 mt-1">{seoDescription.length} / 160</p>
-              </div>
-              <div>
-                <label className={labelCls}>Canonical URL</label>
-                <input
-                  type="url"
-                  value={canonicalUrl}
-                  onChange={(e) => setCanonicalUrl(e.target.value)}
-                  placeholder="https://example.com/original-post"
-                  className={inputCls}
-                />
-              </div>
-            </div>
-          </div>
+          </div> */}
 
           {/* Sidebar */}
           <div className="space-y-4">
             {/* Publish */}
             <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Publish</h2>
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
+                Publish
+              </h2>
               <div>
                 <label className={labelCls}>Status</label>
                 <select
                   value={status}
-                  onChange={(e) => setStatus(e.target.value as SerializedPost["status"])}
+                  onChange={(e) =>
+                    setStatus(e.target.value as SerializedPost["status"])
+                  }
                   className={inputCls}
                 >
                   {STATUS_OPTIONS.map((s) => (
@@ -272,6 +260,21 @@ export default function PostEditor({ post }: Props) {
                     onChange={(e) => setScheduledFor(e.target.value)}
                     className={inputCls}
                   />
+                </div>
+              )}
+
+              {status === "published" && (
+                <div>
+                  <label className={labelCls}>Publish Date (backdate)</label>
+                  <input
+                    type="datetime-local"
+                    value={publishDate}
+                    onChange={(e) => setPublishDate(e.target.value)}
+                    className={inputCls}
+                  />
+                  <p className="text-xs text-zinc-400 mt-1">
+                    Leave empty to use the current date/time.
+                  </p>
                 </div>
               )}
 
@@ -298,7 +301,9 @@ export default function PostEditor({ post }: Props) {
 
             {/* Cover image */}
             <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Cover Image</h2>
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
+                Cover Image
+              </h2>
               <div>
                 <label className={labelCls}>Image URL</label>
                 <input
@@ -329,9 +334,23 @@ export default function PostEditor({ post }: Props) {
               </div>
             </div>
 
+            <div>
+              <label className={labelCls}>Slug *</label>
+              <input
+                type="text"
+                value={slug}
+                onChange={(e) => handleSlugChange(e.target.value)}
+                required
+                placeholder="post-slug"
+                className={inputCls}
+              />
+            </div>
+
             {/* Tags */}
             <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Tags</h2>
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
+                Tags
+              </h2>
               <div>
                 <label className={labelCls}>Tags (comma-separated)</label>
                 <input
@@ -346,7 +365,9 @@ export default function PostEditor({ post }: Props) {
 
             {/* Series */}
             <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Series</h2>
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
+                Series
+              </h2>
               <div>
                 <label className={labelCls}>Series ID</label>
                 <input
@@ -365,6 +386,46 @@ export default function PostEditor({ post }: Props) {
                   value={seriesOrder}
                   onChange={(e) => setSeriesOrder(e.target.value)}
                   placeholder="1"
+                  className={inputCls}
+                />
+              </div>
+            </div>
+
+            {/* SEO */}
+            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
+                SEO
+              </h2>
+              <div>
+                <label className={labelCls}>SEO Title</label>
+                <input
+                  type="text"
+                  value={seoTitle}
+                  onChange={(e) => setSeoTitle(e.target.value)}
+                  placeholder="Overrides title in search results"
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>SEO Description</label>
+                <textarea
+                  value={seoDescription}
+                  onChange={(e) => setSeoDescription(e.target.value)}
+                  placeholder="Meta description (150–160 chars recommended)"
+                  rows={3}
+                  className={`${inputCls} resize-none`}
+                />
+                <p className="text-xs text-zinc-400 mt-1">
+                  {seoDescription.length} / 160
+                </p>
+              </div>
+              <div>
+                <label className={labelCls}>Canonical URL</label>
+                <input
+                  type="url"
+                  value={canonicalUrl}
+                  onChange={(e) => setCanonicalUrl(e.target.value)}
+                  placeholder="https://example.com/original-post"
                   className={inputCls}
                 />
               </div>

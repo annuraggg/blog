@@ -7,7 +7,7 @@ import Post from "@/lib/models/Post";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import Comments from "@/components/Comments";
 import LikeButton from "@/components/LikeButton";
-import { formatDistanceToNow, format } from "date-fns";
+import { format } from "date-fns";
 import remarkGfm from "remark-gfm";
 
 interface Props {
@@ -42,7 +42,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export async function generateStaticParams() {
   try {
     await connectDB();
-    const posts = await Post.find({ status: "published" }).select("slug").lean();
+    const posts = await Post.find({ status: "published" })
+      .select("slug")
+      .lean();
     return posts.map((p) => ({ slug: p.slug }));
   } catch {
     return [];
@@ -56,7 +58,9 @@ export default async function BlogPostPage({ params }: Props) {
   await connectDB();
 
   // Check slug history
-  const historical = await Post.findOne({ slugHistory: slug }).select("slug").lean();
+  const historical = await Post.findOne({ slugHistory: slug })
+    .select("slug")
+    .lean();
   if (historical) redirect(`/blog/${historical.slug}`);
 
   const post = await Post.findOne({ slug })
@@ -70,17 +74,26 @@ export default async function BlogPostPage({ params }: Props) {
   // Get series posts for navigation
   let seriesPosts: { slug: string; title: string; seriesOrder?: number }[] = [];
   if (post.series) {
-    seriesPosts = await Post.find({ series: post.series, status: "published" })
+    seriesPosts = (await Post.find({ series: post.series, status: "published" })
       .select("slug title seriesOrder")
       .sort({ seriesOrder: 1 })
-      .lean() as { slug: string; title: string; seriesOrder?: number }[];
+      .lean()) as { slug: string; title: string; seriesOrder?: number }[];
   }
 
   const currentIndex = seriesPosts.findIndex((p) => p.slug === slug);
   const prevPost = currentIndex > 0 ? seriesPosts[currentIndex - 1] : null;
-  const nextPost = currentIndex < seriesPosts.length - 1 ? seriesPosts[currentIndex + 1] : null;
+  const nextPost =
+    currentIndex < seriesPosts.length - 1
+      ? seriesPosts[currentIndex + 1]
+      : null;
 
-  const author = post.author as unknown as { name: string; image?: string; bio?: string; website?: string; twitter?: string };
+  const author = post.author as unknown as {
+    name: string;
+    image?: string;
+    bio?: string;
+    website?: string;
+    twitter?: string;
+  };
 
   // JSON-LD structured data
   const jsonLd = {
@@ -130,7 +143,9 @@ export default async function BlogPostPage({ params }: Props) {
           </h1>
 
           {post.subheading && (
-            <p className="text-xl text-zinc-500 dark:text-zinc-400 mb-6">{post.subheading}</p>
+            <p className="text-xl text-zinc-500 dark:text-zinc-400 mb-6">
+              {post.subheading}
+            </p>
           )}
 
           <div className="flex items-center gap-4">
@@ -144,7 +159,9 @@ export default async function BlogPostPage({ params }: Props) {
               />
             )}
             <div>
-              <p className="text-sm font-medium text-zinc-900 dark:text-white">{author.name}</p>
+              <p className="text-sm font-medium text-zinc-900 dark:text-white">
+                {author.name}
+              </p>
               <div className="flex items-center gap-2 text-xs text-zinc-400">
                 {post.publishDate && (
                   <time dateTime={post.publishDate.toISOString()}>
@@ -166,7 +183,8 @@ export default async function BlogPostPage({ params }: Props) {
               alt={post.coverImageAlt ?? post.title}
               width={800}
               height={400}
-              className="w-full rounded-none md:rounded-xl object-cover max-h-96"unoptimized
+              className="w-full rounded-none md:rounded-xl object-cover max-h-96"
+              unoptimized
             />
           </div>
         )}
@@ -187,7 +205,9 @@ export default async function BlogPostPage({ params }: Props) {
         {/* Series navigation */}
         {seriesPosts.length > 1 && (
           <nav className="mt-12 pt-8 border-t border-zinc-200 dark:border-zinc-800">
-            <p className="text-sm text-zinc-500 mb-4 font-medium">More in this series</p>
+            <p className="text-sm text-zinc-500 mb-4 font-medium">
+              More in this series
+            </p>
             <div className="flex justify-between gap-4">
               {prevPost ? (
                 <Link
@@ -195,18 +215,26 @@ export default async function BlogPostPage({ params }: Props) {
                   className="flex-1 p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors"
                 >
                   <p className="text-xs text-zinc-400 mb-1">← Previous</p>
-                  <p className="text-sm font-medium text-zinc-900 dark:text-white">{prevPost.title}</p>
+                  <p className="text-sm font-medium text-zinc-900 dark:text-white">
+                    {prevPost.title}
+                  </p>
                 </Link>
-              ) : <div className="flex-1" />}
+              ) : (
+                <div className="flex-1" />
+              )}
               {nextPost ? (
                 <Link
                   href={`/blog/${nextPost.slug}`}
                   className="flex-1 p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors text-right"
                 >
                   <p className="text-xs text-zinc-400 mb-1">Next →</p>
-                  <p className="text-sm font-medium text-zinc-900 dark:text-white">{nextPost.title}</p>
+                  <p className="text-sm font-medium text-zinc-900 dark:text-white">
+                    {nextPost.title}
+                  </p>
                 </Link>
-              ) : <div className="flex-1" />}
+              ) : (
+                <div className="flex-1" />
+              )}
             </div>
           </nav>
         )}
@@ -224,16 +252,30 @@ export default async function BlogPostPage({ params }: Props) {
               />
             )}
             <div>
-              <p className="font-semibold text-zinc-900 dark:text-white mb-1">{author.name}</p>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">{author.bio}</p>
+              <p className="font-semibold text-zinc-900 dark:text-white mb-1">
+                {author.name}
+              </p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                {author.bio}
+              </p>
               <div className="flex gap-3 mt-2">
                 {author.website && (
-                  <a href={author.website} target="_blank" rel="noopener noreferrer" className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200">
+                  <a
+                    href={author.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                  >
                     Website
                   </a>
                 )}
                 {author.twitter && (
-                  <a href={`https://twitter.com/${author.twitter}`} target="_blank" rel="noopener noreferrer" className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200">
+                  <a
+                    href={`https://twitter.com/${author.twitter}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                  >
                     Twitter
                   </a>
                 )}

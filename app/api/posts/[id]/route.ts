@@ -6,7 +6,7 @@ import { calculateReadingTime } from "@/lib/utils";
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   try {
@@ -15,17 +15,21 @@ export async function GET(
       .populate("author", "name image bio")
       .populate("series", "title slug")
       .lean();
-    if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!post)
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(post);
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   try {
@@ -37,7 +41,8 @@ export async function PUT(
     await connectDB();
     const body = await req.json();
     const existing = await Post.findById(id);
-    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!existing)
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     // Save revision before update
     existing.revisions.push({
@@ -58,21 +63,30 @@ export async function PUT(
       readingTime: calculateReadingTime(body.body ?? existing.body),
     });
 
-    if (body.status === "published" && !existing.publishDate) {
+    if (
+      body.status === "published" &&
+      !existing.publishDate &&
+      !body.publishDate
+    ) {
       existing.publishDate = new Date();
+    } else if (body.publishDate) {
+      existing.publishDate = new Date(body.publishDate);
     }
 
     await existing.save();
     return NextResponse.json(existing);
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   try {
@@ -86,6 +100,9 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
