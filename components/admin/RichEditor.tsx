@@ -8,7 +8,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { createLowlight } from "lowlight";
 import { Markdown } from "tiptap-markdown";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 
 interface MarkdownStorage {
   getMarkdown: () => string;
@@ -76,12 +76,44 @@ interface ToolbarProps {
 }
 
 function Toolbar({ editor }: ToolbarProps) {
-  const addImage = useCallback(() => {
-    const url = window.prompt("Image URL:");
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
-    }
-  }, [editor]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      // Reset so the same file can be selected again
+      e.target.value = "";
+
+      setUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("alt", file.name);
+
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error((data as { error?: string }).error ?? "Upload failed");
+        }
+
+        const data = (await res.json()) as { url: string };
+        editor.chain().focus().setImage({ src: data.url }).run();
+      } catch (err) {
+        alert(
+          err instanceof Error ? err.message : "Image upload failed"
+        );
+      } finally {
+        setUploading(false);
+      }
+    },
+    [editor]
+  );
 
   const setLink = useCallback(() => {
     const previousUrl = editor.getAttributes("link").href as string | undefined;
@@ -202,9 +234,20 @@ function Toolbar({ editor }: ToolbarProps) {
       <ToolbarButton onClick={setLink} active={editor.isActive("link")} title="Link">
         <LinkIcon size={15} />
       </ToolbarButton>
-      <ToolbarButton onClick={addImage} title="Image">
+      <ToolbarButton
+        onClick={() => fileInputRef.current?.click()}
+        disabled={uploading}
+        title={uploading ? "Uploading…" : "Insert Image"}
+      >
         <ImageIcon size={15} />
       </ToolbarButton>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="hidden"
+        onChange={handleFileChange}
+      />
 
       <Divider />
 
