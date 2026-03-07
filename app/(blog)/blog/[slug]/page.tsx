@@ -101,7 +101,7 @@ export default async function BlogPostPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <article className="max-w-2xl mx-auto">
+      <article className="max-w-4xl mx-auto">
         {/* Header */}
         <header className="mb-8">
           {post.series && (
@@ -125,7 +125,7 @@ export default async function BlogPostPage({ params }: Props) {
             ))}
           </div>
 
-          <h1 className="text-3xl md:text-4xl font-bold text-zinc-900 dark:text-white mb-4 leading-tight">
+          <h1 className="text-3xl md:text-5xl font-bold text-zinc-900 dark:text-white mb-4 leading-tight">
             {post.title}
           </h1>
 
@@ -180,7 +180,7 @@ export default async function BlogPostPage({ params }: Props) {
         </div>
 
         {/* Like button */}
-        <div className="mt-10 flex items-center gap-4">
+        <div className="mt-10 flex items-center gap-4 cursor-pointer">
           <LikeButton postId={String(post._id)} likeCount={post.likeCount} />
         </div>
 
@@ -220,7 +220,7 @@ export default async function BlogPostPage({ params }: Props) {
                 alt={author.name}
                 width={56}
                 height={56}
-                className="rounded-full flex-shrink-0"
+                className="rounded-full shrink-0"
               />
             )}
             <div>

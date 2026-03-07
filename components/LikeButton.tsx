@@ -35,7 +35,7 @@ export default function LikeButton({ postId, likeCount }: Props) {
       onClick={handleLike}
       disabled={liked || loading}
       aria-label={liked ? "You liked this post" : "Like this post"}
-      className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm transition-colors ${
+      className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm transition-colors cursor-pointer ${
         liked
           ? "bg-pink-50 dark:bg-pink-950 border-pink-200 dark:border-pink-800 text-pink-600 dark:text-pink-400"
           : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-pink-300 dark:hover:border-pink-700 hover:text-pink-600 dark:hover:text-pink-400"
