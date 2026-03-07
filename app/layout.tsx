@@ -4,6 +4,7 @@ import { Lora } from "next/font/google";
 import { Toaster } from "sonner";
 
 import "./globals.css";
+import "katex/dist/katex.min.css";
 
 export const metadata: Metadata = {
   title: {

@@ -15,6 +15,7 @@ import { Superscript } from "@tiptap/extension-superscript";
 import { Selection } from "@tiptap/extensions";
 import { Markdown } from "tiptap-markdown";
 import type { MarkdownStorage } from "tiptap-markdown";
+import { Mathematics } from "@tiptap/extension-mathematics";
 
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button";
@@ -226,6 +227,7 @@ export function SimpleEditor({
       Subscript,
       Selection,
       Markdown.configure({ html: true, tightLists: true }),
+      Mathematics.configure({ katexOptions: { throwOnError: false } }),
       ImageUploadNode.configure({
         accept: "image/*",
         maxSize: MAX_FILE_SIZE,

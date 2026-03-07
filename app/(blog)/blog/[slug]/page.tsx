@@ -11,6 +11,8 @@ import { format } from "date-fns";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import rehypeRaw from "rehype-raw";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -197,8 +199,8 @@ export default async function BlogPostPage({ params }: Props) {
             source={post.body}
             options={{
               mdxOptions: {
-                remarkPlugins: [remarkGfm],
-                rehypePlugins: [rehypeRaw, rehypeHighlight],
+                remarkPlugins: [remarkGfm, remarkMath],
+                rehypePlugins: [rehypeRaw, rehypeHighlight, rehypeKatex],
               },
             }}
           />
