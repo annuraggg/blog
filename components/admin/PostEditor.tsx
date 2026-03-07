@@ -2,6 +2,9 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+
+const RichEditor = dynamic(() => import("./RichEditor"), { ssr: false });
 
 interface SerializedPost {
   _id?: string;
@@ -65,6 +68,9 @@ export default function PostEditor({ post }: Props) {
   const [scheduledFor, setScheduledFor] = useState(
     post?.scheduledFor ? new Date(post.scheduledFor).toISOString().slice(0, 16) : ""
   );
+  const [publishDate, setPublishDate] = useState(
+    post?.publishDate ? new Date(post.publishDate).toISOString().slice(0, 16) : ""
+  );
   const [sendNewsletter, setSendNewsletter] = useState(post?.sendNewsletter ?? false);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(isEdit);
   const [saving, setSaving] = useState(false);
@@ -87,6 +93,10 @@ export default function PostEditor({ post }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!body.trim()) {
+      setError("Body is required.");
+      return;
+    }
     setSaving(true);
     setError("");
 
@@ -110,6 +120,7 @@ export default function PostEditor({ post }: Props) {
       canonicalUrl: canonicalUrl || undefined,
       status,
       scheduledFor: status === "scheduled" && scheduledFor ? scheduledFor : undefined,
+      publishDate: status === "published" && publishDate ? publishDate : undefined,
       sendNewsletter,
     };
 
@@ -194,15 +205,8 @@ export default function PostEditor({ post }: Props) {
               </div>
 
               <div>
-                <label className={labelCls}>Body (Markdown) *</label>
-                <textarea
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  required
-                  placeholder="Write your post in Markdown..."
-                  rows={24}
-                  className={`${inputCls} font-mono resize-y`}
-                />
+                <label className={labelCls}>Body *</label>
+                <RichEditor value={body} onChange={setBody} />
               </div>
             </div>
 
@@ -272,6 +276,21 @@ export default function PostEditor({ post }: Props) {
                     onChange={(e) => setScheduledFor(e.target.value)}
                     className={inputCls}
                   />
+                </div>
+              )}
+
+              {status === "published" && (
+                <div>
+                  <label className={labelCls}>Publish Date (backdate)</label>
+                  <input
+                    type="datetime-local"
+                    value={publishDate}
+                    onChange={(e) => setPublishDate(e.target.value)}
+                    className={inputCls}
+                  />
+                  <p className="text-xs text-zinc-400 mt-1">
+                    Leave empty to use the current date/time.
+                  </p>
                 </div>
               )}
 

@@ -58,8 +58,10 @@ export async function PUT(
       readingTime: calculateReadingTime(body.body ?? existing.body),
     });
 
-    if (body.status === "published" && !existing.publishDate) {
+    if (body.status === "published" && !existing.publishDate && !body.publishDate) {
       existing.publishDate = new Date();
+    } else if (body.publishDate) {
+      existing.publishDate = new Date(body.publishDate);
     }
 
     await existing.save();
