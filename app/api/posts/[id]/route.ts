@@ -44,6 +44,15 @@ export async function PUT(
     if (!existing)
       return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+    // Require cover image when publishing
+    const effectiveCoverImage = body.coverImage ?? existing.coverImage;
+    if (body.status === "published" && !effectiveCoverImage) {
+      return NextResponse.json(
+        { error: "A cover image is required to publish." },
+        { status: 400 },
+      );
+    }
+
     // Save revision before update
     existing.revisions.push({
       title: existing.title,
