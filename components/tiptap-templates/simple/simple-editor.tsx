@@ -14,6 +14,7 @@ import { Subscript } from "@tiptap/extension-subscript";
 import { Superscript } from "@tiptap/extension-superscript";
 import { Selection } from "@tiptap/extensions";
 import { Markdown } from "tiptap-markdown";
+import type { MarkdownStorage } from "tiptap-markdown";
 
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button";
@@ -234,10 +235,13 @@ export function SimpleEditor({
       }),
     ],
     content: initialContent,
-    onUpdate: () => {
+    onUpdate: ({ editor: e }) => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
       debounceTimer.current = setTimeout(() => {
-        onChangeRef.current?.("");
+        const markdownStorage = (
+          e.storage as unknown as Record<string, unknown>
+        ).markdown as MarkdownStorage;
+        onChangeRef.current?.(markdownStorage.getMarkdown());
       }, 300);
     },
   });

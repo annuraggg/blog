@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 const RichEditor = dynamic(() => import("./Editor"), { ssr: false });
 
@@ -98,7 +100,6 @@ export default function PostEditor({ post }: Props) {
   );
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(isEdit);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
 
   // Series list for dropdown
   const [seriesList, setSeriesList] = useState<SeriesOption[]>([]);
@@ -154,7 +155,7 @@ export default function PostEditor({ post }: Props) {
         setCoverImage(d.url);
         setCoverUrlInput(d.url);
       } catch (err) {
-        setError(
+        toast.error(
           err instanceof Error ? err.message : "Cover image upload failed",
         );
       } finally {
@@ -183,7 +184,7 @@ export default function PostEditor({ post }: Props) {
       setCoverImage(d.url);
       setCoverUrlInput(d.url);
     } catch (err) {
-      setError(
+      toast.error(
         err instanceof Error ? err.message : "Cover image URL upload failed",
       );
     } finally {
@@ -194,16 +195,15 @@ export default function PostEditor({ post }: Props) {
   const handleSubmit = async (submitStatus?: SerializedPost["status"]) => {
     const effectiveStatus = submitStatus ?? status;
     if (!body.trim()) {
-      setError("Body is required.");
+      toast.error("Body is required.");
       return;
     }
     if (effectiveStatus === "published" && !coverImage.trim()) {
-      setError("A cover image is required before publishing.");
+      toast.error("A cover image is required before publishing.");
       return;
     }
 
     setSaving(true);
-    setError("");
 
     const tags = tagsInput
       .split(",")
@@ -257,7 +257,7 @@ export default function PostEditor({ post }: Props) {
       router.push(`/admin/posts/${data._id ?? data.id}/edit`);
       router.refresh();
     } catch (err) {
-      setError(
+      toast.error(
         err instanceof Error ? err.message : "An unexpected error occurred.",
       );
     } finally {
@@ -273,12 +273,6 @@ export default function PostEditor({ post }: Props) {
 
   return (
     <div>
-      {error && (
-        <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400">
-          {error}
-        </div>
-      )}
-
       <div className="flex items-start">
         {/* Main editor area */}
         <div className="flex-1 min-w-0 overflow-y-auto h-full">
@@ -344,9 +338,16 @@ export default function PostEditor({ post }: Props) {
                   type="button"
                   onClick={() => coverFileRef.current?.click()}
                   disabled={coverUploading}
-                  className="w-full px-3 py-2 text-sm border border-dashed border-zinc-300 dark:border-zinc-600 rounded-lg text-zinc-500 dark:text-zinc-400 hover:border-zinc-500 dark:hover:border-zinc-400 transition-colors disabled:opacity-50"
+                  className="w-full px-3 py-2 text-sm border border-dashed border-zinc-300 dark:border-zinc-600 rounded-lg text-zinc-500 dark:text-zinc-400 hover:border-zinc-500 dark:hover:border-zinc-400 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {coverUploading ? "Uploading…" : "Choose image file"}
+                  {coverUploading ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Uploading…
+                    </>
+                  ) : (
+                    "Choose image file"
+                  )}
                 </button>
               </div>
 
@@ -365,8 +366,11 @@ export default function PostEditor({ post }: Props) {
                     type="button"
                     onClick={handleCoverUrlSubmit}
                     disabled={coverUploading || !coverUrlInput.trim()}
-                    className="px-3 py-2 text-xs bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-40 whitespace-nowrap"
+                    className="px-3 py-2 text-xs bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-40 whitespace-nowrap flex items-center gap-1.5"
                   >
+                    {coverUploading ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : null}
                     Use URL
                   </button>
                 </div>
@@ -552,17 +556,31 @@ export default function PostEditor({ post }: Props) {
                   type="button"
                   onClick={() => handleSubmit("published")}
                   disabled={saving}
-                  className="w-full px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                  className="w-full px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {saving ? "Saving…" : "Publish"}
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Saving…
+                    </>
+                  ) : (
+                    "Publish"
+                  )}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleSubmit("draft")}
                   disabled={saving}
-                  className="w-full px-4 py-2 bg-transparent border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-medium rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                  className="w-full px-4 py-2 bg-transparent border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-medium rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {saving ? "Saving…" : "Save Draft"}
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Saving…
+                    </>
+                  ) : (
+                    "Save Draft"
+                  )}
                 </button>
               </div>
             </div>
