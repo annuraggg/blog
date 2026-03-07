@@ -7,6 +7,8 @@ import Post from "@/lib/models/Post";
 import Comments from "@/components/Comments";
 import LikeButton from "@/components/LikeButton";
 import { format } from "date-fns";
+import Editor from "@/components/ReadOnlyEditor";
+import type { JSONContent } from "@tiptap/core";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -173,8 +175,7 @@ export default async function BlogPostPage({ params }: Props) {
           </div>
         </header>
 
-        {/* Cover image */}
-        {post.coverImage && (
+        {post?.coverImage ? (
           <div className="mb-8 -mx-4 md:mx-0">
             <Image
               src={post.coverImage}
@@ -185,13 +186,11 @@ export default async function BlogPostPage({ params }: Props) {
               unoptimized
             />
           </div>
+        ) : (
+          <></>
         )}
 
-        {/* Post Content */}
-        <div
-          className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-bold prose-code:font-mono prose-pre:bg-zinc-50 dark:prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-200 dark:prose-pre:border-zinc-800"
-          dangerouslySetInnerHTML={{ __html: post.bodyHTML }}
-        />
+        <Editor content={post.bodyJSON as JSONContent} />
 
         {/* Like button */}
         <div className="mt-10 flex items-center gap-4 cursor-pointer">

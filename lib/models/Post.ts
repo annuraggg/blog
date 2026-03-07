@@ -2,7 +2,7 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 
 export interface IRevision {
   title: string;
-  bodyJSON: unknown;
+  bodyJSON?: unknown;
   updatedAt: Date;
   updatedBy: mongoose.Types.ObjectId;
 }
@@ -14,7 +14,7 @@ export interface IPost extends Document {
   slugHistory: string[];
   coverImage?: string;
   coverImageAlt?: string;
-  bodyJSON: unknown;
+  bodyJSON?: unknown;
   bodyHTML: string;
   tags: string[];
   series?: mongoose.Types.ObjectId;
@@ -39,7 +39,7 @@ export interface IPost extends Document {
 
 const RevisionSchema = new Schema<IRevision>({
   title: { type: String, required: true },
-  bodyJSON: { type: mongoose.Schema.Types.Mixed, required: true },
+  bodyJSON: { type: mongoose.Schema.Types.Mixed, required: false },
   updatedAt: { type: Date, default: Date.now },
   updatedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
 });
@@ -52,7 +52,7 @@ const PostSchema = new Schema<IPost>(
     slugHistory: [{ type: String }],
     coverImage: { type: String },
     coverImageAlt: { type: String },
-    bodyJSON: { type: mongoose.Schema.Types.Mixed, required: true },
+    bodyJSON: { type: mongoose.Schema.Types.Mixed, required: false },
     bodyHTML: { type: String, required: true },
     tags: [{ type: String }],
     series: { type: Schema.Types.ObjectId, ref: "Series" },
