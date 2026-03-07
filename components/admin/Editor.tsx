@@ -1,10 +1,15 @@
 import React from "react";
 import { SimpleEditor } from "../tiptap-templates/simple/simple-editor";
 
-const Editor = () => {
+interface EditorProps {
+  value: string;
+  onChange: (content: string) => void;
+}
+
+const Editor = ({ value, onChange }: EditorProps) => {
   return (
     <div className="w-full">
-      <SimpleEditor />
+      <SimpleEditor initialContent={value} onChange={onChange} />
     </div>
   );
 };

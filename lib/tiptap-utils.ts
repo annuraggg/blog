@@ -352,7 +352,9 @@ export function selectionWithinConvertibleTypes(
 }
 
 /**
- * Handles image upload with progress tracking and abort capability
+ * Handles image upload with progress tracking and abort capability.
+ * Uploads the file to Cloudflare R2 via the /api/upload endpoint and returns
+ * the public R2 URL.
  * @param file The file to upload
  * @param onProgress Optional callback for tracking upload progress
  * @param abortSignal Optional AbortSignal for cancelling the upload
@@ -363,7 +365,6 @@ export const handleImageUpload = async (
   onProgress?: (event: { progress: number }) => void,
   abortSignal?: AbortSignal
 ): Promise<string> => {
-  // Validate file
   if (!file) {
     throw new Error("No file provided")
   }
@@ -374,17 +375,27 @@ export const handleImageUpload = async (
     )
   }
 
-  // For demo/testing: Simulate upload progress. In production, replace the following code
-  // with your own upload implementation.
-  for (let progress = 0; progress <= 100; progress += 10) {
-    if (abortSignal?.aborted) {
-      throw new Error("Upload cancelled")
-    }
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    onProgress?.({ progress })
+  onProgress?.({ progress: 0 })
+
+  const formData = new FormData()
+  formData.append("file", file)
+  formData.append("alt", file.name)
+
+  const response = await fetch("/api/upload", {
+    method: "POST",
+    body: formData,
+    signal: abortSignal,
+  })
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    throw new Error((data as { error?: string }).error ?? "Upload failed")
   }
 
-  return "/images/tiptap-ui-placeholder-image.jpg"
+  onProgress?.({ progress: 100 })
+
+  const data = (await response.json()) as { url: string }
+  return data.url
 }
 
 type ProtocolOptions = {

@@ -58,6 +58,14 @@ export async function POST(req: NextRequest) {
     await connectDB();
     const body = await req.json();
 
+    // Require cover image when publishing
+    if (body.status === "published" && !body.coverImage) {
+      return NextResponse.json(
+        { error: "A cover image is required to publish." },
+        { status: 400 },
+      );
+    }
+
     // Auto-generate slug if not provided
     if (!body.slug && body.title) {
       const slugify = (await import("slugify")).default;
