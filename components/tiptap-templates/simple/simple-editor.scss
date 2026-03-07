@@ -1,7 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 
 body {
-  --tt-toolbar-height: 44px;
+  --tt-toolbar-height: 48px;
   --tt-theme-text: var(--tt-gray-light-900);
 
   .dark & {
@@ -19,12 +19,24 @@ body {
   overscroll-behavior-y: none;
 }
 
-/* TipTap highlight */
+/* ------------------------------------------------
+   TipTap highlight marks
+   ------------------------------------------------ */
+
+/* Default yellow highlight (no color attribute) */
 .tiptap mark {
-  background: #fff59d;
+  background-color: var(--tt-color-highlight-yellow, #fef9c3);
   color: inherit;
-  padding: 0.05em 0.2em;
-  border-radius: 4px;
+  padding: 0.1em 0.25em;
+  border-radius: 3px;
+}
+
+/* Multicolor highlights: TipTap sets inline background-color via the
+   style attribute when multicolor is enabled — ensure base styles apply */
+.tiptap mark[data-color] {
+  color: inherit;
+  padding: 0.1em 0.25em;
+  border-radius: 3px;
 }
 
 html,
@@ -62,29 +74,60 @@ body,
   font-family: "DM Sans", sans-serif;
 }
 
+/* ------------------------------------------------
+   Editor wrapper — fits inside parent containers
+   rather than forcing full viewport size
+   ------------------------------------------------ */
 .simple-editor-wrapper {
-  width: 100vw;
-  height: 100vh;
-  overflow: auto;
-}
-
-.simple-editor-content {
-  max-width: 648px;
   width: 100%;
-  margin: 0 auto;
-  height: 100%;
+  min-height: 500px;
+  overflow: auto;
   display: flex;
   flex-direction: column;
+  background-color: var(--tt-bg-color);
+  border-radius: 0.75rem;
+  border: 1px solid var(--tt-border-color);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.04),
+    0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+/* Round top corners of the fixed toolbar to match wrapper */
+.simple-editor-wrapper .tiptap-toolbar[data-variant="fixed"] {
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+/* ------------------------------------------------
+   Content area — scrollable, grows to fill space
+   ------------------------------------------------ */
+.simple-editor-content {
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
   flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .simple-editor-content .tiptap.ProseMirror.simple-editor {
   flex: 1;
-  padding: 3rem 3rem 30vh;
+  padding: 2rem 2.5rem 4rem;
+  outline: none;
+  min-height: 320px;
+  line-height: 1.75;
+  font-size: 1rem;
+  color: var(--tt-theme-text);
+}
+
+@media screen and (max-width: 768px) {
+  .simple-editor-content {
+    max-width: 100%;
+  }
 }
 
 @media screen and (max-width: 480px) {
   .simple-editor-content .tiptap.ProseMirror.simple-editor {
-    padding: 1rem 1.5rem 30vh;
+    padding: 1rem 1.25rem 6rem;
   }
 }
