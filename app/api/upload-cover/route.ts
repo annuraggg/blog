@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { auth } from "@/lib/auth";
-import { randomUUID } from "crypto";
+import { createHash } from "crypto";
 import dns from "dns/promises";
 
 const s3 = new S3Client({
@@ -109,7 +109,32 @@ export async function POST(req: NextRequest) {
       "image/gif": "gif",
     };
     const ext = extMap[baseType] ?? "jpg";
-    const key = `uploads/${randomUUID()}.${ext}`;
+
+    // Use content hash as key to avoid re-uploading identical images
+    const hash = createHash("sha256").update(buffer).digest("hex");
+    const key = `uploads/${hash}.${ext}`;
+
+    // Check if this exact image already exists in R2
+    try {
+      await s3.send(
+        new HeadObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME!,
+          Key: key,
+        })
+      );
+      // Already exists — return existing URL
+      const r2Url = `${process.env.R2_PUBLIC_URL}/${key}`;
+      return NextResponse.json({ url: r2Url, key });
+    } catch (headErr: unknown) {
+      // Only proceed if the object was not found (404 / NoSuchKey)
+      const code = (headErr as { name?: string; $metadata?: { httpStatusCode?: number } })?.name
+        ?? (headErr as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode?.toString();
+      if (code !== "NotFound" && code !== "NoSuchKey" && code !== "404") {
+        console.error("HeadObject error:", headErr);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+      }
+      // Object does not exist yet, proceed with upload
+    }
 
     await s3.send(
       new PutObjectCommand({
