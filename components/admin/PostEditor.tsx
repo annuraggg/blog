@@ -3,7 +3,6 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { SimpleEditor } from "../tiptap-templates/simple/simple-editor";
 import Editor from "./Editor";
 
 const RichEditor = dynamic(() => import("./RichEditor"), { ssr: false });
@@ -117,6 +116,7 @@ export default function PostEditor({ post }: Props) {
       setError("Body is required.");
       return;
     }
+
     setSaving(true);
     setError("");
 
@@ -149,6 +149,7 @@ export default function PostEditor({ post }: Props) {
     try {
       const url = isEdit ? `/api/posts/${post!._id}` : "/api/posts";
       const method = isEdit ? "PUT" : "POST";
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -176,6 +177,7 @@ export default function PostEditor({ post }: Props) {
 
   const inputCls =
     "w-full px-3 py-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-500";
+
   const labelCls =
     "block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1";
 
@@ -189,51 +191,44 @@ export default function PostEditor({ post }: Props) {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main content */}
-
-          <div className="bg-white dark:bg-zinc-900 rounded-xl w-[50vw] border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
-            <Editor />
-          </div>
-
-          {/* <div className="lg:col-span-2 space-y-4">
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
-              <div>
-                <label className={labelCls}>Title *</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => handleTitleChange(e.target.value)}
-                  required
-                  placeholder="Post title"
-                  className={inputCls}
-                />
-              </div>
-
-              <div>
-                <label className={labelCls}>Subheading</label>
-                <input
-                  type="text"
-                  value={subheading}
-                  onChange={(e) => setSubheading(e.target.value)}
-                  placeholder="Optional subheading"
-                  className={inputCls}
-                />
-              </div>
-
-              <div>
-                <label className={labelCls}>Body *</label>
-                <RichEditor value={body} onChange={setBody} />
-              </div>
+          {/* Main Editor */}
+          <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
+            <div>
+              <label className={labelCls}>Title *</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => handleTitleChange(e.target.value)}
+                required
+                placeholder="Post title"
+                className={inputCls}
+              />
             </div>
-          </div> */}
+
+            <div>
+              <label className={labelCls}>Subheading</label>
+              <input
+                type="text"
+                value={subheading}
+                onChange={(e) => setSubheading(e.target.value)}
+                placeholder="Optional subheading"
+                className={inputCls}
+              />
+            </div>
+
+            <div>
+              <label className={labelCls}>Body *</label>
+              <Editor />
+            </div>
+          </div>
 
           {/* Sidebar */}
           <div className="space-y-4">
-            {/* Publish */}
             <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
               <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
                 Publish
               </h2>
+
               <div>
                 <label className={labelCls}>Status</label>
                 <select
@@ -265,30 +260,15 @@ export default function PostEditor({ post }: Props) {
 
               {status === "published" && (
                 <div>
-                  <label className={labelCls}>Publish Date (backdate)</label>
+                  <label className={labelCls}>Publish Date</label>
                   <input
                     type="datetime-local"
                     value={publishDate}
                     onChange={(e) => setPublishDate(e.target.value)}
                     className={inputCls}
                   />
-                  <p className="text-xs text-zinc-400 mt-1">
-                    Leave empty to use the current date/time.
-                  </p>
                 </div>
               )}
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={sendNewsletter}
-                  onChange={(e) => setSendNewsletter(e.target.checked)}
-                  className="rounded border-zinc-300 dark:border-zinc-600"
-                />
-                <span className="text-sm text-zinc-700 dark:text-zinc-300">
-                  Send newsletter on publish
-                </span>
-              </label>
 
               <button
                 type="submit"
@@ -297,41 +277,6 @@ export default function PostEditor({ post }: Props) {
               >
                 {saving ? "Saving…" : isEdit ? "Update Post" : "Create Post"}
               </button>
-            </div>
-
-            {/* Cover image */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
-                Cover Image
-              </h2>
-              <div>
-                <label className={labelCls}>Image URL</label>
-                <input
-                  type="url"
-                  value={coverImage}
-                  onChange={(e) => setCoverImage(e.target.value)}
-                  placeholder="https://..."
-                  className={inputCls}
-                />
-              </div>
-              {coverImage && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={coverImage}
-                  alt={coverImageAlt || "Cover preview"}
-                  className="w-full rounded-lg object-cover aspect-video"
-                />
-              )}
-              <div>
-                <label className={labelCls}>Alt Text</label>
-                <input
-                  type="text"
-                  value={coverImageAlt}
-                  onChange={(e) => setCoverImageAlt(e.target.value)}
-                  placeholder="Describe the image"
-                  className={inputCls}
-                />
-              </div>
             </div>
 
             <div>
@@ -344,91 +289,6 @@ export default function PostEditor({ post }: Props) {
                 placeholder="post-slug"
                 className={inputCls}
               />
-            </div>
-
-            {/* Tags */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
-                Tags
-              </h2>
-              <div>
-                <label className={labelCls}>Tags (comma-separated)</label>
-                <input
-                  type="text"
-                  value={tagsInput}
-                  onChange={(e) => setTagsInput(e.target.value)}
-                  placeholder="nextjs, react, typescript"
-                  className={inputCls}
-                />
-              </div>
-            </div>
-
-            {/* Series */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
-                Series
-              </h2>
-              <div>
-                <label className={labelCls}>Series ID</label>
-                <input
-                  type="text"
-                  value={seriesId}
-                  onChange={(e) => setSeriesId(e.target.value)}
-                  placeholder="MongoDB ObjectId of series"
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>Order in Series</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={seriesOrder}
-                  onChange={(e) => setSeriesOrder(e.target.value)}
-                  placeholder="1"
-                  className={inputCls}
-                />
-              </div>
-            </div>
-
-            {/* SEO */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
-                SEO
-              </h2>
-              <div>
-                <label className={labelCls}>SEO Title</label>
-                <input
-                  type="text"
-                  value={seoTitle}
-                  onChange={(e) => setSeoTitle(e.target.value)}
-                  placeholder="Overrides title in search results"
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>SEO Description</label>
-                <textarea
-                  value={seoDescription}
-                  onChange={(e) => setSeoDescription(e.target.value)}
-                  placeholder="Meta description (150–160 chars recommended)"
-                  rows={3}
-                  className={`${inputCls} resize-none`}
-                />
-                <p className="text-xs text-zinc-400 mt-1">
-                  {seoDescription.length} / 160
-                </p>
-              </div>
-              <div>
-                <label className={labelCls}>Canonical URL</label>
-                <input
-                  type="url"
-                  value={canonicalUrl}
-                  onChange={(e) => setCanonicalUrl(e.target.value)}
-                  placeholder="https://example.com/original-post"
-                  className={inputCls}
-                />
-              </div>
             </div>
           </div>
         </div>

@@ -19,6 +19,14 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* TipTap highlight */
+.tiptap mark {
+  background: #fff59d;
+  color: inherit;
+  padding: 0.05em 0.2em;
+  border-radius: 4px;
+}
+
 html,
 body {
   overscroll-behavior-x: none;
