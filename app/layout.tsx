@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Lora } from "next/font/google";
+import { Toaster } from "sonner";
 
 import "./globals.css";
 
@@ -26,8 +27,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
      <body className={`${lora.className} font-sans`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
-        </ThemeProvider>
+            {children}
+            <Toaster richColors closeButton />
+          </ThemeProvider>
       </body>
     </html>
   );
