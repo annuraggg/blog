@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { EditorContent, EditorContext, useEditor } from "@tiptap/react";
+import type { JSONContent } from "@tiptap/core";
 
 // --- Tiptap Core Extensions ---
 import { StarterKit } from "@tiptap/starter-kit";
@@ -14,7 +15,6 @@ import { Subscript } from "@tiptap/extension-subscript";
 import { Superscript } from "@tiptap/extension-superscript";
 import { Selection } from "@tiptap/extensions";
 import { Markdown } from "tiptap-markdown";
-import type { MarkdownStorage } from "tiptap-markdown";
 import { Mathematics } from "@tiptap/extension-mathematics";
 
 // --- UI Primitives ---
@@ -176,11 +176,11 @@ const MobileToolbarContent = ({
 );
 
 export function SimpleEditor({
-  initialContent = "",
+  initialContent,
   onChange,
 }: {
-  initialContent?: string;
-  onChange?: (markdown: string) => void;
+  initialContent?: JSONContent | string;
+  onChange?: (json: JSONContent) => void;
 }) {
   const isMobile = useIsBreakpoint();
   const { height } = useWindowSize();
@@ -240,10 +240,7 @@ export function SimpleEditor({
     onUpdate: ({ editor: e }) => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
       debounceTimer.current = setTimeout(() => {
-        const markdownStorage = (
-          e.storage as unknown as Record<string, unknown>
-        ).markdown as MarkdownStorage;
-        onChangeRef.current?.(markdownStorage.getMarkdown());
+        onChangeRef.current?.(e.getJSON());
       }, 300);
     },
   });

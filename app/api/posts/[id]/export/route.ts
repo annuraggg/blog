@@ -34,12 +34,12 @@ export async function GET(
       .filter(Boolean)
       .join("\n");
 
-    const markdown = `${frontmatter}\n\n${post.body}`;
+    const content = `${frontmatter}\n\n${post.bodyHTML}`;
 
-    return new NextResponse(markdown, {
+    return new NextResponse(content, {
       headers: {
-        "Content-Type": "text/markdown; charset=utf-8",
-        "Content-Disposition": `attachment; filename="${post.slug}.md"`,
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${post.slug}.html"`,
       },
     });
   } catch (err) {

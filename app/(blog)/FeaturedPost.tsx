@@ -41,9 +41,9 @@ const FeaturedPost = ({ post }: FeaturedPostProps) => {
           </h2>
         </Link>
 
-        {post.body && (
+        {post.subheading && (
           <p className="text-zinc-600 dark:text-zinc-400 text-lg leading-relaxed line-clamp-3">
-            {post.body}
+            {post.subheading}
           </p>
         )}
 

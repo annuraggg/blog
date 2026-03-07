@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import type { JSONContent } from "@tiptap/core";
 
 const RichEditor = dynamic(() => import("./Editor"), { ssr: false });
 
@@ -15,7 +16,7 @@ interface SerializedPost {
   slug: string;
   coverImage?: string;
   coverImageAlt?: string;
-  body: string;
+  bodyJSON: JSONContent;
   tags: string[];
   series?: { _id: string; title: string; slug: string } | null;
   seriesOrder?: number;
@@ -71,7 +72,9 @@ export default function PostEditor({ post }: Props) {
   const [slug, setSlug] = useState(post?.slug ?? "");
   const [coverImage, setCoverImage] = useState(post?.coverImage ?? "");
   const [coverImageAlt, setCoverImageAlt] = useState(post?.coverImageAlt ?? "");
-  const [body, setBody] = useState(post?.body ?? "");
+  const [bodyJSON, setBodyJSON] = useState<JSONContent | null>(
+    post?.bodyJSON ?? null,
+  );
   const [tagsInput, setTagsInput] = useState((post?.tags ?? []).join(", "));
   const [seriesId, setSeriesId] = useState(post?.series?._id ?? "");
   const [seriesOrder, setSeriesOrder] = useState(
@@ -194,7 +197,7 @@ export default function PostEditor({ post }: Props) {
 
   const handleSubmit = async (submitStatus?: SerializedPost["status"]) => {
     const effectiveStatus = submitStatus ?? status;
-    if (!body.trim()) {
+    if (!bodyJSON) {
       toast.error("Body is required.");
       return;
     }
@@ -216,7 +219,7 @@ export default function PostEditor({ post }: Props) {
       slug,
       coverImage: coverImage || undefined,
       coverImageAlt: coverImageAlt || undefined,
-      body,
+      bodyJSON,
       tags,
       series: seriesId || undefined,
       seriesOrder: seriesOrder ? Number(seriesOrder) : undefined,
@@ -276,7 +279,7 @@ export default function PostEditor({ post }: Props) {
       <div className="flex items-start">
         {/* Main editor area */}
         <div className="flex-1 min-w-0 overflow-y-auto h-full">
-          <RichEditor value={body} onChange={setBody} />
+          <RichEditor value={bodyJSON} onChange={setBodyJSON} />
         </div>
 
         {/* Sidebar */}
