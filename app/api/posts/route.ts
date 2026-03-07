@@ -3,6 +3,8 @@ import { connectDB } from "@/lib/db";
 import Post from "@/lib/models/Post";
 import { auth } from "@/lib/auth";
 import { calculateReadingTime } from "@/lib/utils";
+import { renderTiptapHTML, renderTiptapText } from "@/lib/tiptapRender";
+import type { JSONContent } from "@tiptap/core";
 
 // GET /api/posts - list published posts with search/filter/sort
 export async function GET(req: NextRequest) {
@@ -33,7 +35,7 @@ export async function GET(req: NextRequest) {
         .limit(limit)
         .populate("author", "name image bio")
         .populate("series", "title slug")
-        .select("-body -revisions")
+        .select("-bodyJSON -bodyHTML -revisions")
         .lean(),
       Post.countDocuments(filter),
     ]);
@@ -73,10 +75,16 @@ export async function POST(req: NextRequest) {
       body.slug = slugify(body.title, { lower: true, strict: true });
     }
 
+    const bodyJSON: JSONContent = body.bodyJSON;
+    const bodyHTML = renderTiptapHTML(bodyJSON);
+    const textContent = renderTiptapText(bodyJSON);
+
     const post = await Post.create({
       ...body,
+      bodyJSON,
+      bodyHTML,
       author: session.user.id,
-      readingTime: calculateReadingTime(body.body ?? ""),
+      readingTime: calculateReadingTime(textContent),
       publishDate: body.publishDate
         ? new Date(body.publishDate)
         : body.status === "published"

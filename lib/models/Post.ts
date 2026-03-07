@@ -2,7 +2,7 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 
 export interface IRevision {
   title: string;
-  body: string;
+  bodyJSON: unknown;
   updatedAt: Date;
   updatedBy: mongoose.Types.ObjectId;
 }
@@ -14,7 +14,8 @@ export interface IPost extends Document {
   slugHistory: string[];
   coverImage?: string;
   coverImageAlt?: string;
-  body: string;
+  bodyJSON: unknown;
+  bodyHTML: string;
   tags: string[];
   series?: mongoose.Types.ObjectId;
   seriesOrder?: number;
@@ -38,7 +39,7 @@ export interface IPost extends Document {
 
 const RevisionSchema = new Schema<IRevision>({
   title: { type: String, required: true },
-  body: { type: String, required: true },
+  bodyJSON: { type: mongoose.Schema.Types.Mixed, required: true },
   updatedAt: { type: Date, default: Date.now },
   updatedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
 });
@@ -51,7 +52,8 @@ const PostSchema = new Schema<IPost>(
     slugHistory: [{ type: String }],
     coverImage: { type: String },
     coverImageAlt: { type: String },
-    body: { type: String, required: true, default: "" },
+    bodyJSON: { type: mongoose.Schema.Types.Mixed, required: true },
+    bodyHTML: { type: String, required: true },
     tags: [{ type: String }],
     series: { type: Schema.Types.ObjectId, ref: "Series" },
     seriesOrder: { type: Number },
@@ -78,7 +80,7 @@ const PostSchema = new Schema<IPost>(
 );
 
 // Full-text search index
-PostSchema.index({ title: "text", body: "text", tags: "text" });
+PostSchema.index({ title: "text", bodyHTML: "text", tags: "text" });
 
 const Post: Model<IPost> =
   mongoose.models.Post ?? mongoose.model<IPost>("Post", PostSchema);
