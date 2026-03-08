@@ -8,6 +8,8 @@ import Comments from "@/components/Comments";
 import LikeButton from "@/components/LikeButton";
 import { format } from "date-fns";
 import Editor from "@/components/ReadOnlyEditor";
+import AnalyticsTracker from "@/components/AnalyticsTracker";
+import RelatedPosts from "@/components/RelatedPosts";
 import type { JSONContent } from "@tiptap/core";
 
 interface Props {
@@ -80,6 +82,17 @@ export default async function BlogPostPage({ params }: Props) {
       .lean()) as { slug: string; title: string; seriesOrder?: number }[];
   }
 
+  // Get related posts (same tags, excluding current post)
+  const relatedPosts = await Post.find({
+    status: "published",
+    _id: { $ne: post._id },
+    ...(post.tags.length ? { tags: { $in: post.tags } } : {}),
+  })
+    .sort({ publishDate: -1 })
+    .limit(3)
+    .select("title subheading slug coverImage tags readingTime publishDate")
+    .lean();
+
   const currentIndex = seriesPosts.findIndex((p) => p.slug === slug);
   const prevPost = currentIndex > 0 ? seriesPosts[currentIndex - 1] : null;
   const nextPost =
@@ -113,6 +126,7 @@ export default async function BlogPostPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <AnalyticsTracker postId={String(post._id)} />
 
       <article className="max-w-4xl mx-auto">
         {/* Header */}
@@ -278,6 +292,20 @@ export default async function BlogPostPage({ params }: Props) {
             </div>
           </div>
         )}
+
+        {/* Related posts */}
+        <RelatedPosts
+          posts={relatedPosts.map((p) => ({
+            _id: String(p._id),
+            title: p.title,
+            slug: p.slug,
+            subheading: p.subheading,
+            coverImage: p.coverImage,
+            tags: p.tags,
+            readingTime: p.readingTime,
+            publishDate: p.publishDate,
+          }))}
+        />
 
         {/* Comments */}
         <Comments postId={String(post._id)} />
