@@ -9,6 +9,7 @@ import {
   BookOpen,
   MessageSquare,
   BarChart2,
+  Users,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -46,6 +47,13 @@ const NAV_ITEMS = [
     icon: MessageSquare,
     isActive: (p: string) =>
       p === "/admin/comments" || p.startsWith("/admin/comments/"),
+  },
+  {
+    href: "/admin/subscribers",
+    label: "Subscribers",
+    icon: Users,
+    isActive: (p: string) =>
+      p === "/admin/subscribers" || p.startsWith("/admin/subscribers/"),
   },
   {
     href: "/admin/analytics",

@@ -94,7 +94,6 @@ export async function POST(req: NextRequest) {
     });
 
     if (post.sendNewsletter) {
-      console.log("Sending newsletter for post:", post.title);
       await sendPostEmail({
         title: post.title,
         slug: post.slug,

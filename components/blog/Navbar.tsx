@@ -15,6 +15,7 @@ const Navbar = async () => {
   const seriesList = await getSeries();
   const navItems = [
     { href: "/", label: "Latest" },
+    { href: "/blog", label: "Blog" },
     ...seriesList.map((s: { slug: string; title: string }) => ({
       href: `/series/${s.slug}`,
       label: s.title,
