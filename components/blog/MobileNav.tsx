@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -17,11 +17,28 @@ export default function MobileNav({ items }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
+  // Close on ESC key
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [open]);
+
+  // Close on route change
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
   return (
     <div className="md:hidden">
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Close menu" : "Open menu"}
+        aria-expanded={open}
+        aria-controls="mobile-nav-menu"
         className="p-2 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors"
       >
         {open ? (
@@ -39,7 +56,12 @@ export default function MobileNav({ items }: Props) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 top-16 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-sm">
+        <div
+          id="mobile-nav-menu"
+          role="dialog"
+          aria-label="Navigation menu"
+          className="fixed inset-0 top-16 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-sm"
+        >
           <nav className="flex flex-col p-6 gap-4">
             {items.map((item) => {
               const active = pathname === item.href;
