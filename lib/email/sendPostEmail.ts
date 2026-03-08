@@ -4,36 +4,38 @@ import Subscriber from "@/lib/models/Subscriber";
 interface PostEmailPayload {
   title: string;
   slug: string;
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  coverImage: string;
+  excerpt: string;
 }
 
 export async function sendPostEmail(post: PostEmailPayload): Promise<void> {
   await connectDB();
 
+  console.log("Fetching subscribers for newsletter...");
   const subscribers = await Subscriber.find({ unsubscribed: false }).lean();
+  console.log(`Found ${subscribers.length} subscribers.`);
   if (!subscribers.length) return;
 
   const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) {
-    console.error("BREVO_API_KEY is not set. Skipping newsletter emails.");
+    console.error("BREVO_API_KEY is not set.");
     return;
   }
 
-  const siteUrl = process.env.SITE_URL ?? "https://yourdomain.com";
-  const senderEmail = process.env.BREVO_SENDER_EMAIL ?? "no-reply@yourdomain.com";
-  const senderName = process.env.BREVO_SENDER_NAME ?? "Blog";
-  const safeTitle = escapeHtml(post.title);
+  const siteUrl = process.env.SITE_URL;
+  const senderEmail = process.env.BREVO_SENDER_EMAIL;
+  const senderName = process.env.BREVO_SENDER_NAME;
+
+  const templateId = 5;
 
   for (const subscriber of subscribers) {
-    const unsubscribeUrl = `${siteUrl}/api/unsubscribe?email=${encodeURIComponent(subscriber.email)}`;
-    const htmlContent = `<h2>${safeTitle}</h2><p>A new article was published.</p><a href="${siteUrl}/blog/${post.slug}">Read the article</a><br/><br/><small><a href="${unsubscribeUrl}">Unsubscribe</a></small>`;
+    const unsubscribeUrl = `${siteUrl}/api/unsubscribe?email=${encodeURIComponent(
+      subscriber.email,
+    )}`;
+
+    const postUrl = `${siteUrl}/blog/${post.slug}`;
+
+    console.log(`Sending email to ${subscriber.email}`);
 
     try {
       const res = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -45,14 +47,19 @@ export async function sendPostEmail(post: PostEmailPayload): Promise<void> {
         body: JSON.stringify({
           sender: { email: senderEmail, name: senderName },
           to: [{ email: subscriber.email }],
-          subject: `New post: ${post.title}`,
-          htmlContent,
+          templateId: templateId,
+          params: {
+            title: post.title,
+            post_url: postUrl,
+            excerpt: post.excerpt,
+            unsubscribe_url: unsubscribeUrl,
+            cover: post.coverImage,
+          },
         }),
       });
 
       if (!res.ok) {
-        const err = await res.text();
-        console.error(`Failed to send email to ${subscriber.email}:`, err);
+        console.error(await res.text());
       }
     } catch (e) {
       console.error(`Error sending email to ${subscriber.email}:`, e);

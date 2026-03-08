@@ -23,6 +23,7 @@ interface SerializedPost {
   seoTitle?: string;
   seoDescription?: string;
   canonicalUrl?: string;
+  excerpt?: string; // ADD THIS
   status:
     | "draft"
     | "scheduled"
@@ -101,6 +102,8 @@ export default function PostEditor({ post }: Props) {
   const [sendNewsletter, setSendNewsletter] = useState(
     post?.sendNewsletter ?? false,
   );
+  const [excerpt, setExcerpt] = useState(post?.excerpt ?? "");
+
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(isEdit);
   const [saving, setSaving] = useState(false);
 
@@ -206,6 +209,11 @@ export default function PostEditor({ post }: Props) {
       return;
     }
 
+    if (sendNewsletter && !excerpt.trim()) {
+      toast.error("Excerpt is required to send the newsletter.");
+      return;
+    }
+
     setSaving(true);
 
     const tags = tagsInput
@@ -226,6 +234,7 @@ export default function PostEditor({ post }: Props) {
       seoTitle: seoTitle || undefined,
       seoDescription: seoDescription || undefined,
       canonicalUrl: canonicalUrl || undefined,
+      excerpt: sendNewsletter ? excerpt : undefined, // ADD
       status: effectiveStatus,
       scheduledFor:
         effectiveStatus === "scheduled" && scheduledFor
@@ -553,6 +562,22 @@ export default function PostEditor({ post }: Props) {
                   Send newsletter on publish
                 </span>
               </label>
+
+              {sendNewsletter && (
+                <div>
+                  <label className={labelCls}>Newsletter Excerpt *</label>
+                  <textarea
+                    value={excerpt}
+                    onChange={(e) => setExcerpt(e.target.value)}
+                    placeholder="Short summary that will appear in the email..."
+                    rows={3}
+                    className={`${inputCls} resize-none`}
+                  />
+                  <p className="text-xs text-zinc-400 mt-1">
+                    Recommended: 120–200 characters
+                  </p>
+                </div>
+              )}
 
               <div className="flex flex-col gap-2 pt-1">
                 <button

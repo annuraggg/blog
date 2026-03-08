@@ -93,8 +93,14 @@ export async function POST(req: NextRequest) {
           : undefined,
     });
 
-    if (post.sendNewsletter === true) {
-      await sendPostEmail({ title: post.title, slug: post.slug });
+    if (post.sendNewsletter) {
+      console.log("Sending newsletter for post:", post.title);
+      await sendPostEmail({
+        title: post.title,
+        slug: post.slug,
+        coverImage: post.coverImage!,
+        excerpt: body.excerpt!,
+      });
     }
 
     return NextResponse.json(post, { status: 201 });
@@ -105,63 +111,4 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
-}
-
-async function sendNewsletter(post: IPost) {
-  const createRes = await fetch("https://api.kit.com/v3/broadcasts", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      api_key: process.env.KIT_API_KEY,
-      subject: `New article: ${post.title}`,
-      content: `
-        <h1>${post.title}</h1>
-        <p>${post.subheading ?? ""}</p>
-
-        <p>Read the full article:</p>
-
-        <p>
-          <a href="https://blog.anuragsawant.in/blog/${post.slug}">
-            Read the article
-          </a>
-        </p>
-      `,
-      public: true,
-    }),
-  });
-
-  const createData = await createRes.json();
-
-  if (!createRes.ok) {
-    console.error(createData);
-    throw new Error("Failed to create broadcast");
-  }
-
-  const broadcastId = createData.broadcast.id;
-
-  // SEND the broadcast
-  setTimeout(async () => {
-    const sendRes = await fetch(
-      `https://api.kit.com/v3/broadcasts/${broadcastId}/send`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          api_key: process.env.KIT_API_KEY,
-        }),
-      },
-    );
-
-    if (!sendRes.ok) {
-      const err = await sendRes.text();
-      console.error("Send failed:", err);
-      throw new Error("Failed to send broadcast");
-    }
-
-    console.log("Newsletter sent for:", post.title);
-  }, 5000); // Delay sending by 5 seconds to ensure broadcast is ready
 }
