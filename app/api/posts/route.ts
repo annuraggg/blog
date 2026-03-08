@@ -4,6 +4,7 @@ import Post, { IPost } from "@/lib/models/Post";
 import { auth } from "@/lib/auth";
 import { calculateReadingTime } from "@/lib/utils";
 import { renderTiptapHTML, renderTiptapText } from "@/lib/tiptapRender";
+import { sendPostEmail } from "@/lib/email/sendPostEmail";
 import type { JSONContent } from "@tiptap/core";
 
 // GET /api/posts - list published posts with search/filter/sort
@@ -92,15 +93,8 @@ export async function POST(req: NextRequest) {
           : undefined,
     });
 
-    // Newsletter integration
-    console.log(body);
-    if (body.sendNewsletter && body.status === "published") {
-      try {
-        console.log("Sending newsletter for post:", post.title);
-        await sendNewsletter(post);
-      } catch (err) {
-        console.error("Failed to send newsletter:", err);
-      }
+    if (post.sendNewsletter === true) {
+      await sendPostEmail({ title: post.title, slug: post.slug });
     }
 
     return NextResponse.json(post, { status: 201 });

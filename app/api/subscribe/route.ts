@@ -4,7 +4,6 @@ import Subscriber from "@/lib/models/Subscriber";
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("Received subscription request");
     await connectDB();
     const { email } = await req.json();
 

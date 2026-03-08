@@ -26,7 +26,6 @@ export interface IPost extends Document {
   publishDate?: Date;
   scheduledFor?: Date;
   sendNewsletter: boolean;
-  kitCampaignId?: string;
   readingTime: number;
   author: mongoose.Types.ObjectId;
   revisions: IRevision[];
@@ -68,7 +67,6 @@ const PostSchema = new Schema<IPost>(
     publishDate: { type: Date },
     scheduledFor: { type: Date },
     sendNewsletter: { type: Boolean, default: false },
-    kitCampaignId: { type: String },
     readingTime: { type: Number, default: 0 },
     author: { type: Schema.Types.ObjectId, ref: "User", required: true },
     revisions: [RevisionSchema],
