@@ -47,7 +47,7 @@
     "lodash.throttle": "^4.1.1",
     "lowlight": "^3.3.0",
     "lucide-react": "^0.577.0",
-    "mongodb": "^7.1.0",
+    "mongodb": "^6.21.0",
     "mongoose": "^9.2.4",
     "motion": "^12.35.0",
     "next": "16.1.6",
