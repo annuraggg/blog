@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useNavStore } from "@/lib/stores/nav-store";
 
 interface NavItem {
   href: string;
@@ -16,6 +17,7 @@ interface Props {
 export default function MobileNav({ items }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const setNavigating = useNavStore((state) => state.setNavigating);
 
   // Close on ESC key
   useEffect(() => {
@@ -69,7 +71,10 @@ export default function MobileNav({ items }: Props) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={() => setOpen(false)}
+                  onClick={() => {
+                    setOpen(false);
+                    if (pathname !== item.href) setNavigating(true);
+                  }}
                   className={`text-lg font-medium py-2 border-b border-zinc-100 dark:border-zinc-800 transition-colors ${
                     active
                       ? "text-blue-500"

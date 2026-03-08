@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
+import { RouteProgress } from "@/components/RouteProgress";
 
 import "./globals.css";
 import "katex/dist/katex.min.css";
@@ -22,6 +23,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <RouteProgress />
             {children}
             <Toaster richColors closeButton />
           </ThemeProvider>

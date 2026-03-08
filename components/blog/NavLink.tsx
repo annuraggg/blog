@@ -3,6 +3,7 @@
 import Link from "next/link";
 import React from "react";
 import { usePathname } from "next/navigation";
+import { useNavStore } from "@/lib/stores/nav-store";
 
 type NavLinkProps = {
   href: string;
@@ -15,10 +16,14 @@ export default function NavLink({
 }: NavLinkProps) {
   const pathname = usePathname();
   const active = pathname === href;
+  const setNavigating = useNavStore((state) => state.setNavigating);
 
   return (
     <Link
       href={href}
+      onClick={() => {
+        if (pathname !== href) setNavigating(true);
+      }}
       className={`
         relative inline-block
         dark:text-white/80 text-zinc-900
