@@ -1,5 +1,6 @@
 import { connectDB } from "@/lib/db";
 import Subscriber from "@/lib/models/Subscriber";
+import { blogConfig } from "@/lib/config";
 
 interface PostEmailPayload {
   title: string;
@@ -11,9 +12,7 @@ interface PostEmailPayload {
 export async function sendPostEmail(post: PostEmailPayload): Promise<void> {
   await connectDB();
 
-  console.log("Fetching subscribers for newsletter...");
   const subscribers = await Subscriber.find({ unsubscribed: false }).lean();
-  console.log(`Found ${subscribers.length} subscribers.`);
   if (!subscribers.length) return;
 
   const apiKey = process.env.BREVO_API_KEY;
@@ -22,11 +21,8 @@ export async function sendPostEmail(post: PostEmailPayload): Promise<void> {
     return;
   }
 
-  const siteUrl = process.env.SITE_URL;
-  const senderEmail = process.env.BREVO_SENDER_EMAIL;
-  const senderName = process.env.BREVO_SENDER_NAME;
-
-  const templateId = 5;
+  const siteUrl = blogConfig.url;
+  const { senderEmail, senderName, templateId } = blogConfig.email;
 
   for (const subscriber of subscribers) {
     const unsubscribeUrl = `${siteUrl}/api/unsubscribe?email=${encodeURIComponent(
@@ -34,8 +30,6 @@ export async function sendPostEmail(post: PostEmailPayload): Promise<void> {
     )}`;
 
     const postUrl = `${siteUrl}/blog/${post.slug}`;
-
-    console.log(`Sending email to ${subscriber.email}`);
 
     try {
       const res = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -47,7 +41,7 @@ export async function sendPostEmail(post: PostEmailPayload): Promise<void> {
         body: JSON.stringify({
           sender: { email: senderEmail, name: senderName },
           to: [{ email: subscriber.email }],
-          templateId: templateId,
+          templateId,
           params: {
             title: post.title,
             post_url: postUrl,
@@ -60,6 +54,12 @@ export async function sendPostEmail(post: PostEmailPayload): Promise<void> {
 
       if (!res.ok) {
         console.error(await res.text());
+      } else {
+        // Track email send analytics
+        await Subscriber.updateOne(
+          { _id: subscriber._id },
+          { $inc: { emailsSent: 1 }, $set: { lastEmailSentAt: new Date() } },
+        );
       }
     } catch (e) {
       console.error(`Error sending email to ${subscriber.email}:`, e);

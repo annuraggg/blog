@@ -4,8 +4,9 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import type { JSONContent } from "@tiptap/core";
+import CoverCropperModal from "./CoverCropperModal";
 
 const RichEditor = dynamic(() => import("./Editor"), { ssr: false });
 
@@ -64,6 +65,9 @@ interface SeriesOption {
   slug: string;
 }
 
+/** Maximum file size accepted before cropping (bytes) */
+const MAX_COVER_FILE_BYTES = 15 * 1024 * 1024; // 15 MB
+
 export default function PostEditor({ post }: Props) {
   const router = useRouter();
   const isEdit = Boolean(post?._id);
@@ -104,8 +108,12 @@ export default function PostEditor({ post }: Props) {
   );
   const [excerpt, setExcerpt] = useState(post?.excerpt ?? "");
 
-  const [slugManuallyEdited, setSlugManuallyEdited] = useState(isEdit);
+  // When editing, default to custom slug mode so auto-generation doesn't overwrite existing slug
+  const [customSlug, setCustomSlug] = useState(isEdit);
   const [saving, setSaving] = useState(false);
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+  const [slugChecking, setSlugChecking] = useState(false);
+  const slugCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Series list for dropdown
   const [seriesList, setSeriesList] = useState<SeriesOption[]>([]);
@@ -118,58 +126,115 @@ export default function PostEditor({ post }: Props) {
       });
   }, []);
 
+  // Debounced slug availability check
+  useEffect(() => {
+    if (!slug) {
+      setSlugAvailable(null);
+      return;
+    }
+    if (slugCheckTimer.current) clearTimeout(slugCheckTimer.current);
+    setSlugChecking(true);
+    slugCheckTimer.current = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ slug });
+        if (post?._id) params.set("excludeId", post._id);
+        const res = await fetch(`/api/posts/check-slug?${params}`);
+        const data = (await res.json()) as { available: boolean };
+        setSlugAvailable(data.available);
+      } catch {
+        setSlugAvailable(null);
+      } finally {
+        setSlugChecking(false);
+      }
+    }, 500);
+    return () => {
+      if (slugCheckTimer.current) clearTimeout(slugCheckTimer.current);
+    };
+  }, [slug, post?._id]);
+
   // Cover image upload
   const [coverUploading, setCoverUploading] = useState(false);
   const [coverUrlInput, setCoverUrlInput] = useState(post?.coverImage ?? "");
   const coverFileRef = useRef<HTMLInputElement>(null);
 
+  // Cropper state
+  const [cropperSrc, setCropperSrc] = useState<string | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+
   const handleTitleChange = useCallback(
     (value: string) => {
       setTitle(value);
-      if (!slugManuallyEdited) {
+      if (!customSlug) {
         setSlug(slugify(value));
       }
     },
-    [slugManuallyEdited],
+    [customSlug],
   );
 
   const handleSlugChange = useCallback((value: string) => {
     setSlug(slugify(value));
-    setSlugManuallyEdited(true);
   }, []);
 
-  // Upload cover image file to R2
+  // Upload a blob as cover image to R2
+  const uploadCoverBlob = useCallback(async (blob: Blob, fileName: string) => {
+    setCoverUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", blob, fileName);
+      formData.append("alt", fileName);
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error((d as { error?: string }).error ?? "Upload failed");
+      }
+      const d = (await res.json()) as { url: string };
+      setCoverImage(d.url);
+      setCoverUrlInput(d.url);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Cover image upload failed",
+      );
+    } finally {
+      setCoverUploading(false);
+    }
+  }, []);
+
+  // Open cropper when a file is selected
   const handleCoverFileChange = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
+    (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
       e.target.value = "";
-      setCoverUploading(true);
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("alt", file.name);
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-        if (!res.ok) {
-          const d = await res.json().catch(() => ({}));
-          throw new Error((d as { error?: string }).error ?? "Upload failed");
-        }
-        const d = (await res.json()) as { url: string };
-        setCoverImage(d.url);
-        setCoverUrlInput(d.url);
-      } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Cover image upload failed",
-        );
-      } finally {
-        setCoverUploading(false);
+      // Validate file size before cropping
+      if (file.size > MAX_COVER_FILE_BYTES) {
+        toast.error("File is too large. Maximum size is 15 MB.");
+        return;
       }
+      const objectUrl = URL.createObjectURL(file);
+      setPendingFile(file);
+      setCropperSrc(objectUrl);
     },
     [],
   );
+
+  const handleCropComplete = useCallback(
+    (croppedBlob: Blob) => {
+      setCropperSrc(null);
+      const fileName = pendingFile?.name ?? "cover.jpg";
+      setPendingFile(null);
+      uploadCoverBlob(croppedBlob, fileName);
+    },
+    [pendingFile, uploadCoverBlob],
+  );
+
+  const handleCropCancel = useCallback(() => {
+    if (cropperSrc) URL.revokeObjectURL(cropperSrc);
+    setCropperSrc(null);
+    setPendingFile(null);
+  }, [cropperSrc]);
 
   // Proxy an external cover image URL through R2
   const handleCoverUrlSubmit = useCallback(async () => {
@@ -206,6 +271,10 @@ export default function PostEditor({ post }: Props) {
     }
     if (effectiveStatus === "published" && !coverImage.trim()) {
       toast.error("A cover image is required before publishing.");
+      return;
+    }
+    if (slugAvailable === false) {
+      toast.error("Slug is already taken. Please choose a different slug.");
       return;
     }
 
@@ -266,6 +335,7 @@ export default function PostEditor({ post }: Props) {
       }
 
       const data = (await res.json()) as { _id?: string; id?: string };
+      toast.success(isEdit ? "Post updated successfully." : "Post created successfully.");
       router.push(`/admin/posts/${data._id ?? data.id}/edit`);
       router.refresh();
     } catch (err) {
@@ -285,6 +355,15 @@ export default function PostEditor({ post }: Props) {
 
   return (
     <div>
+      {/* Cover image cropper modal */}
+      {cropperSrc && (
+        <CoverCropperModal
+          imageSrc={cropperSrc}
+          onComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
+      )}
+
       <div className="flex items-start">
         {/* Main editor area */}
         <div className="flex-1 min-w-0 overflow-y-auto h-full">
@@ -308,15 +387,45 @@ export default function PostEditor({ post }: Props) {
                 />
               </div>
               <div>
-                <label className={labelCls}>Slug *</label>
-                <input
-                  type="text"
-                  value={slug}
-                  onChange={(e) => handleSlugChange(e.target.value)}
-                  required
-                  placeholder="post-slug"
-                  className={inputCls}
-                />
+                <div className="flex items-center justify-between mb-1">
+                  <label className={labelCls}>Slug *</label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={customSlug}
+                      onChange={(e) => setCustomSlug(e.target.checked)}
+                      className="rounded border-zinc-300 dark:border-zinc-600 h-3 w-3"
+                    />
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">Custom</span>
+                  </label>
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={slug}
+                    onChange={(e) => handleSlugChange(e.target.value)}
+                    required
+                    disabled={!customSlug}
+                    placeholder="post-slug"
+                    className={`${inputCls} pr-7 ${!customSlug ? "opacity-50 cursor-not-allowed" : ""}`}
+                  />
+                  {slug && (
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2">
+                      {slugChecking ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-400" />
+                      ) : slugAvailable === true ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                      ) : slugAvailable === false ? (
+                        <XCircle className="h-3.5 w-3.5 text-red-500" />
+                      ) : null}
+                    </span>
+                  )}
+                </div>
+                {!customSlug ? (
+                  <p className="text-xs text-zinc-400 mt-1">Auto-generated from title</p>
+                ) : slugAvailable === false ? (
+                  <p className="text-xs text-red-500 mt-1">Slug is already taken</p>
+                ) : null}
               </div>
               <div>
                 <label className={labelCls}>Subheading</label>
