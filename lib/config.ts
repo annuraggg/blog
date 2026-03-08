@@ -4,6 +4,9 @@
  * multiple blogs simply by changing env vars (or editing this file).
  */
 
+/** Default Brevo transactional email template ID */
+const DEFAULT_EMAIL_TEMPLATE_ID = 5;
+
 export const blogConfig = {
   /** Public display name of the blog */
   name: process.env.NEXT_PUBLIC_SITE_NAME ?? "My Blog",
@@ -26,7 +29,7 @@ export const blogConfig = {
   email: {
     senderName: process.env.BREVO_SENDER_NAME ?? "Blog Newsletter",
     senderEmail: process.env.BREVO_SENDER_EMAIL ?? "",
-    templateId: Number(process.env.BREVO_TEMPLATE_ID ?? "5"),
+    templateId: Number(process.env.BREVO_TEMPLATE_ID ?? DEFAULT_EMAIL_TEMPLATE_ID),
   },
 } as const;
 

@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import { Loader2, X, Check } from "lucide-react";
+import { toast } from "sonner";
 
 interface Props {
   imageSrc: string;
@@ -12,7 +13,10 @@ interface Props {
 
 /** Target aspect ratio for all cover images (16:9) */
 const ASPECT = 16 / 9;
-/** Max output width in pixels */
+/**
+ * Maximum output width in pixels. Keeps file sizes manageable while maintaining
+ * quality at typical blog content widths (max ~1280px).
+ */
 const OUTPUT_WIDTH = 1200;
 
 async function getCroppedBlob(
@@ -87,7 +91,7 @@ export default function CoverCropperModal({
       const blob = await getCroppedBlob(imageSrc, croppedAreaPixels);
       onComplete(blob);
     } catch {
-      // fallback: let parent handle upload of original
+      toast.error("Cropping failed. Please try again or cancel and re-select the image.");
       setProcessing(false);
     }
   };

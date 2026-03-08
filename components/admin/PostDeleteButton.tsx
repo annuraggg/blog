@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface Props {
   postId: string;
@@ -18,10 +19,11 @@ export default function PostDeleteButton({ postId }: Props) {
     try {
       const res = await fetch(`/api/posts/${postId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete post");
+      toast.success("Post deleted successfully.");
       router.refresh();
     } catch (err) {
       console.error("Failed to delete post:", err);
-      alert("Failed to delete post. Please try again.");
+      toast.error("Failed to delete post. Please try again.");
     } finally {
       setDeleting(false);
     }

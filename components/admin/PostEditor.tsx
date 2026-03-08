@@ -65,6 +65,9 @@ interface SeriesOption {
   slug: string;
 }
 
+/** Maximum file size accepted before cropping (bytes) */
+const MAX_COVER_FILE_BYTES = 15 * 1024 * 1024; // 15 MB
+
 export default function PostEditor({ post }: Props) {
   const router = useRouter();
   const isEdit = Boolean(post?._id);
@@ -205,8 +208,8 @@ export default function PostEditor({ post }: Props) {
       const file = e.target.files?.[0];
       if (!file) return;
       e.target.value = "";
-      // Validate file size (max 15 MB before cropping)
-      if (file.size > 15 * 1024 * 1024) {
+      // Validate file size before cropping
+      if (file.size > MAX_COVER_FILE_BYTES) {
         toast.error("File is too large. Maximum size is 15 MB.");
         return;
       }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, Trash2, UserPlus, Search } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -19,12 +19,23 @@ export default function SubscribersManager() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [addEmail, setAddEmail] = useState("");
   const [adding, setAdding] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const limit = 20;
+
+  // Debounce the search input
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   const fetchSubscribers = useCallback(
     async (q: string, pg: number) => {
@@ -53,16 +64,11 @@ export default function SubscribersManager() {
   );
 
   useEffect(() => {
-    fetchSubscribers(search, page);
-  }, [fetchSubscribers, page]); // eslint-disable-line react-hooks/exhaustive-deps
+    fetchSubscribers(debouncedSearch, page);
+  }, [fetchSubscribers, debouncedSearch, page]);
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => {
-      setPage(1);
-      fetchSubscribers(value, 1);
-    }, 400);
   };
 
   const handleAdd = async (e: React.FormEvent) => {

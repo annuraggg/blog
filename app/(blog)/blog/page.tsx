@@ -1,11 +1,18 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Metadata } from "next";
 import { connectDB } from "@/lib/db";
 import Post from "@/lib/models/Post";
 import Series from "@/lib/models/Series";
 import { formatDistanceToNow } from "date-fns";
+import { blogConfig } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Blog",
+  description: `All articles on ${blogConfig.name} — ${blogConfig.description}`,
+};
 
 interface Props {
   searchParams: Promise<{

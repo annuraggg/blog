@@ -54,6 +54,12 @@ export async function sendPostEmail(post: PostEmailPayload): Promise<void> {
 
       if (!res.ok) {
         console.error(await res.text());
+      } else {
+        // Track email send analytics
+        await Subscriber.updateOne(
+          { _id: subscriber._id },
+          { $inc: { emailsSent: 1 }, $set: { lastEmailSentAt: new Date() } },
+        );
       }
     } catch (e) {
       console.error(`Error sending email to ${subscriber.email}:`, e);

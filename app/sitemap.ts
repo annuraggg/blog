@@ -2,11 +2,12 @@ import { MetadataRoute } from "next";
 import { connectDB } from "@/lib/db";
 import Post from "@/lib/models/Post";
 import Series from "@/lib/models/Series";
+import { blogConfig } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXTAUTH_URL ?? "https://anuragsawant.in";
+  const baseUrl = blogConfig.url || process.env.NEXTAUTH_URL || "https://anuragsawant.in";
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: new Date(), changeFrequency: "daily", priority: 1 },

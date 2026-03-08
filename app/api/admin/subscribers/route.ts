@@ -17,8 +17,7 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
     const limit = Math.min(100, parseInt(searchParams.get("limit") ?? "20", 10));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const filter: any = {};
+    const filter: Record<string, unknown> = {};
     if (q) filter.email = { $regex: q, $options: "i" };
 
     const [subscribers, total] = await Promise.all([
