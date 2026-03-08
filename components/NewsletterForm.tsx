@@ -20,6 +20,8 @@ export default function NewsletterSection() {
         body: JSON.stringify({ email }),
       });
 
+      console.log("Subscription response:", res.body);
+
       if (res.ok) {
         setStatus("success");
         setMessage("Thanks for subscribing!");
@@ -29,7 +31,8 @@ export default function NewsletterSection() {
         setStatus("error");
         setMessage(data.error ?? "Something went wrong.");
       }
-    } catch {
+    } catch (error) {
+      console.error("Subscription error" + error);
       setStatus("error");
       setMessage("Something went wrong. Please try again.");
     }

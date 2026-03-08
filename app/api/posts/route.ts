@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import Post from "@/lib/models/Post";
+import Post, { IPost } from "@/lib/models/Post";
 import { auth } from "@/lib/auth";
 import { calculateReadingTime } from "@/lib/utils";
 import { renderTiptapHTML, renderTiptapText } from "@/lib/tiptapRender";
@@ -92,6 +92,17 @@ export async function POST(req: NextRequest) {
           : undefined,
     });
 
+    // Newsletter integration
+    console.log(body);
+    if (body.sendNewsletter && body.status === "published") {
+      try {
+        console.log("Sending newsletter for post:", post.title);
+        await sendNewsletter(post);
+      } catch (err) {
+        console.error("Failed to send newsletter:", err);
+      }
+    }
+
     return NextResponse.json(post, { status: 201 });
   } catch (err) {
     console.error(err);
@@ -100,4 +111,63 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+async function sendNewsletter(post: IPost) {
+  const createRes = await fetch("https://api.kit.com/v3/broadcasts", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      api_key: process.env.KIT_API_KEY,
+      subject: `New article: ${post.title}`,
+      content: `
+        <h1>${post.title}</h1>
+        <p>${post.subheading ?? ""}</p>
+
+        <p>Read the full article:</p>
+
+        <p>
+          <a href="https://blog.anuragsawant.in/blog/${post.slug}">
+            Read the article
+          </a>
+        </p>
+      `,
+      public: true,
+    }),
+  });
+
+  const createData = await createRes.json();
+
+  if (!createRes.ok) {
+    console.error(createData);
+    throw new Error("Failed to create broadcast");
+  }
+
+  const broadcastId = createData.broadcast.id;
+
+  // SEND the broadcast
+  setTimeout(async () => {
+    const sendRes = await fetch(
+      `https://api.kit.com/v3/broadcasts/${broadcastId}/send`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          api_key: process.env.KIT_API_KEY,
+        }),
+      },
+    );
+
+    if (!sendRes.ok) {
+      const err = await sendRes.text();
+      console.error("Send failed:", err);
+      throw new Error("Failed to send broadcast");
+    }
+
+    console.log("Newsletter sent for:", post.title);
+  }, 5000); // Delay sending by 5 seconds to ensure broadcast is ready
 }

@@ -4,6 +4,7 @@ import Subscriber from "@/lib/models/Subscriber";
 
 export async function POST(req: NextRequest) {
   try {
+    console.log("Received subscription request");
     await connectDB();
     const { email, name } = await req.json();
 
@@ -13,7 +14,12 @@ export async function POST(req: NextRequest) {
 
     // Try to add to Kit (ConvertKit)
     let kitSubscriberId: string | undefined;
+    console.log("Checking Kit API credentials:", {
+      apiKey: !!process.env.KIT_API_KEY,
+      formId: !!process.env.KIT_FORM_ID,
+    });
     if (process.env.KIT_API_KEY && process.env.KIT_FORM_ID) {
+      console.log("Subscribing to Kit with email:", email);
       try {
         const kitRes = await fetch(
           `https://api.convertkit.com/v3/forms/${process.env.KIT_FORM_ID}/subscribe`,
@@ -29,6 +35,8 @@ export async function POST(req: NextRequest) {
         );
         const kitData = await kitRes.json();
         kitSubscriberId = kitData?.subscription?.subscriber?.id?.toString();
+
+        console.log("Kit subscription response:", kitData);
       } catch (e) {
         console.error("Kit subscription error:", e);
       }
