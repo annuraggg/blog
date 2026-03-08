@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
-import { Lora } from "next/font/google";
 import { Toaster } from "sonner";
 
 import "./globals.css";
@@ -14,11 +13,6 @@ export const metadata: Metadata = {
   description: process.env.NEXT_PUBLIC_SITE_DESCRIPTION || "",
 };
 
-const lora = Lora({
-  subsets: ["latin"],
-  variable: "--font-lora",
-});
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -26,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-     <body className={`${lora.className} font-sans`}>
+      <body className="font-sans">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             {children}
             <Toaster richColors closeButton />
