@@ -4,6 +4,7 @@ import Post from "@/lib/models/Post";
 import { auth } from "@/lib/auth";
 import { calculateReadingTime } from "@/lib/utils";
 import { renderTiptapHTML, renderTiptapText } from "@/lib/tiptapRender";
+import { sendPostEmail } from "@/lib/email/sendPostEmail";
 import type { JSONContent } from "@tiptap/core";
 
 // GET /api/posts - list published posts with search/filter/sort
@@ -91,6 +92,10 @@ export async function POST(req: NextRequest) {
           ? new Date()
           : undefined,
     });
+
+    if (post.sendNewsletter === true) {
+      await sendPostEmail({ title: post.title, slug: post.slug });
+    }
 
     return NextResponse.json(post, { status: 201 });
   } catch (err) {
