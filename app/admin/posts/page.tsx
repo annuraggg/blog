@@ -8,11 +8,11 @@ import { auth } from "@/lib/auth";
 
 export default async function AdminPostsPage() {
   const session = await auth();
-  const isAdmin = session?.user.role === "admin" || session?.user.role === "editor";
+  const canManageAllPosts = session?.user.role === "admin" || session?.user.role === "editor";
 
   await connectDB();
   // Authors only see their own posts; admins/editors see all
-  const query = isAdmin ? {} : { author: session?.user.id };
+  const query = canManageAllPosts ? {} : { author: session?.user.id };
   const posts = await Post.find(query)
     .sort({ updatedAt: -1 })
     .populate("author", "name")
@@ -81,7 +81,7 @@ export default async function AdminPostsPage() {
                     >
                       Edit
                     </Link>
-                    {isAdmin && <PostDeleteButton postId={String(post._id)} />}
+                    {canManageAllPosts && <PostDeleteButton postId={String(post._id)} />}
                   </div>
                 </td>
               </tr>

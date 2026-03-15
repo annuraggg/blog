@@ -17,7 +17,7 @@ import { Selection } from "@tiptap/extensions";
 import { Markdown } from "tiptap-markdown";
 import { Mathematics } from "@tiptap/extension-mathematics";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
-import { createLowlight, common } from "lowlight";
+import { createLowlight, all } from "lowlight";
 
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button";
@@ -75,7 +75,7 @@ import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils";
 // --- Styles ---
 import "@/components/tiptap-templates/simple/simple-editor.scss";
 
-const lowlight = createLowlight(common);
+const lowlight = createLowlight(all);
 
 const MainToolbarContent = ({
   onHighlighterClick,

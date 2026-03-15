@@ -24,7 +24,7 @@ export default function TableOfContents() {
     if (headings.length === 0) return;
 
     // Ensure each heading has an id
-    headings.forEach((h) => {
+    headings.forEach((h, i) => {
       if (!h.id) {
         h.id = h.textContent
           ? h.textContent
@@ -33,7 +33,7 @@ export default function TableOfContents() {
               .replace(/[^a-z0-9\s-]/g, "")
               .replace(/\s+/g, "-")
               .replace(/-+/g, "-")
-          : `heading-${Math.random().toString(36).slice(2, 7)}`;
+          : `heading-${i}`;
       }
     });
 

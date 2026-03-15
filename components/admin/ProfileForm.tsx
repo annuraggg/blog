@@ -142,7 +142,7 @@ export default function ProfileForm({ user }: { user: ProfileData }) {
             />
           ) : (
             <div className="h-16 w-16 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-lg font-bold text-zinc-500 dark:text-zinc-300">
-              {name.charAt(0).toUpperCase()}
+              {name?.charAt(0)?.toUpperCase() ?? "?"}
             </div>
           )}
           <div>

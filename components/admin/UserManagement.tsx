@@ -86,7 +86,7 @@ export default function UserManagement({ users: initial }: { users: UserRow[] })
           name: data.name,
           email: data.email,
           role: data.role,
-          createdAt: new Date().toISOString(),
+          createdAt: (data as unknown as { createdAt?: string }).createdAt ?? new Date().toISOString(),
         },
         ...prev,
       ]);

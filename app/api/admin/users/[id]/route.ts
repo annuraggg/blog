@@ -52,7 +52,10 @@ export async function DELETE(
       );
     }
     await connectDB();
-    await User.findByIdAndDelete(id);
+    const deleted = await User.findByIdAndDelete(id);
+    if (!deleted) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error(err);
