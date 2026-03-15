@@ -32,6 +32,9 @@ export interface IPost extends Document {
   viewCount: number;
   uniqueViewCount: number;
   likeCount: number;
+  inflatedViews: number;
+  inflatedLikes: number;
+  randomInflation: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -73,6 +76,9 @@ const PostSchema = new Schema<IPost>(
     viewCount: { type: Number, default: 0 },
     uniqueViewCount: { type: Number, default: 0 },
     likeCount: { type: Number, default: 0 },
+    inflatedViews: { type: Number, default: 0 },
+    inflatedLikes: { type: Number, default: 0 },
+    randomInflation: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -35,10 +35,14 @@ interface SerializedPost {
   publishDate?: string;
   scheduledFor?: string;
   sendNewsletter: boolean;
+  inflatedViews?: number;
+  inflatedLikes?: number;
+  randomInflation?: boolean;
 }
 
 interface Props {
   post?: SerializedPost;
+  isAdmin?: boolean;
 }
 
 const STATUS_OPTIONS = [
@@ -68,7 +72,7 @@ interface SeriesOption {
 /** Maximum file size accepted before cropping (bytes) */
 const MAX_COVER_FILE_BYTES = 15 * 1024 * 1024; // 15 MB
 
-export default function PostEditor({ post }: Props) {
+export default function PostEditor({ post, isAdmin = false }: Props) {
   const router = useRouter();
   const isEdit = Boolean(post?._id);
 
@@ -107,6 +111,18 @@ export default function PostEditor({ post }: Props) {
     post?.sendNewsletter ?? false,
   );
   const [excerpt, setExcerpt] = useState(post?.excerpt ?? "");
+
+  // Inflation state (admin-only, edit mode)
+  const [inflatedViews, setInflatedViews] = useState(
+    String(post?.inflatedViews ?? 0),
+  );
+  const [inflatedLikes, setInflatedLikes] = useState(
+    String(post?.inflatedLikes ?? 0),
+  );
+  const [randomInflation, setRandomInflation] = useState(
+    post?.randomInflation ?? false,
+  );
+  const [inflationSaving, setInflationSaving] = useState(false);
 
   // When editing, default to custom slug mode so auto-generation doesn't overwrite existing slug
   const [customSlug, setCustomSlug] = useState(isEdit);
@@ -238,6 +254,64 @@ export default function PostEditor({ post }: Props) {
     setCropperSrc(null);
     setPendingFile(null);
   }, [cropperSrc]);
+
+  const handleInflationSave = useCallback(
+    async (applyRandom = false) => {
+      if (!post?._id) return;
+      const views = Number(inflatedViews);
+      const likes = Number(inflatedLikes);
+      if (isNaN(views) || views < 0) {
+        toast.error("Inflated views must be a non-negative number.");
+        return;
+      }
+      if (isNaN(likes) || likes < 0) {
+        toast.error("Inflated likes must be a non-negative number.");
+        return;
+      }
+      if (likes > views) {
+        toast.error("Inflated likes cannot exceed inflated views.");
+        return;
+      }
+      setInflationSaving(true);
+      try {
+        const payload: Record<string, unknown> = {
+          inflatedViews: views,
+          inflatedLikes: likes,
+          randomInflation: applyRandom ? true : randomInflation,
+        };
+        const res = await fetch(
+          `/api/admin/posts/${post._id}/inflate`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          throw new Error(
+            (d as { error?: string }).error ?? "Failed to save inflation settings",
+          );
+        }
+        const data = (await res.json()) as {
+          inflatedViews: number;
+          inflatedLikes: number;
+          randomInflation: boolean;
+        };
+        setInflatedViews(String(data.inflatedViews));
+        setInflatedLikes(String(data.inflatedLikes));
+        setRandomInflation(data.randomInflation);
+        toast.success("Inflation settings saved.");
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to save inflation settings",
+        );
+      } finally {
+        setInflationSaving(false);
+      }
+    },
+    [post?._id, inflatedViews, inflatedLikes, randomInflation],
+  );
 
   // Proxy an external cover image URL through R2
   const handleCoverUrlSubmit = useCallback(async () => {
@@ -756,6 +830,74 @@ export default function PostEditor({ post }: Props) {
                 </button>
               </div>
             </div>
+
+            {/* Metrics Inflation — admin + edit mode only */}
+            {isAdmin && isEdit && (
+              <div className="bg-white dark:bg-zinc-900 py-6 p-4 space-y-3">
+                <h2 className="text-xs font-semibold text-zinc-900 dark:text-white uppercase tracking-wide">
+                  Metrics Inflation
+                </h2>
+                <p className="text-xs text-zinc-400">
+                  Boost displayed views &amp; likes. Real analytics remain
+                  unchanged.
+                </p>
+                <div>
+                  <label className={labelCls}>Extra Views</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={inflatedViews}
+                    onChange={(e) => setInflatedViews(e.target.value)}
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Extra Likes</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={inflatedLikes}
+                    onChange={(e) => setInflatedLikes(e.target.value)}
+                    className={inputCls}
+                  />
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={randomInflation}
+                    onChange={(e) => setRandomInflation(e.target.checked)}
+                    className="rounded border-zinc-300 dark:border-zinc-600"
+                  />
+                  <span className="text-xs text-zinc-700 dark:text-zinc-300">
+                    Random inflation applied
+                  </span>
+                </label>
+                <div className="flex flex-col gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleInflationSave(false)}
+                    disabled={inflationSaving}
+                    className="w-full px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-medium rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {inflationSaving && (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    )}
+                    Save Inflation
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInflationSave(true)}
+                    disabled={inflationSaving}
+                    className="w-full px-4 py-2 bg-transparent border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-medium rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {inflationSaving && (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    )}
+                    Apply Random Inflation
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
