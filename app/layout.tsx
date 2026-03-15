@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { RouteProgress } from "@/components/RouteProgress";
+import { Lora } from "next/font/google";
 
 import "./globals.css";
 import "katex/dist/katex.min.css";
@@ -14,6 +15,11 @@ export const metadata: Metadata = {
   description: process.env.NEXT_PUBLIC_SITE_DESCRIPTION || "",
 };
 
+const lora = Lora({
+  subsets: ["latin"],
+  variable: "--font-lora",
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -21,12 +27,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="font-sans">
+      <body className={`${lora.className} font-sans `}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <RouteProgress />
-            {children}
-            <Toaster richColors closeButton />
-          </ThemeProvider>
+          <RouteProgress />
+          {children}
+          <Toaster richColors closeButton />
+        </ThemeProvider>
       </body>
     </html>
   );
