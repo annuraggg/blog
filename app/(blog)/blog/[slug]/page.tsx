@@ -11,6 +11,7 @@ import Editor from "@/components/ReadOnlyEditor";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
 import RelatedPosts from "@/components/RelatedPosts";
 import TableOfContents from "@/components/TableOfContents";
+import { extractHeadings } from "@/lib/tiptapUtils";
 import type { JSONContent } from "@tiptap/core";
 
 interface Props {
@@ -121,6 +122,9 @@ export default async function BlogPostPage({ params }: Props) {
     author: { "@type": "Person", name: author.name },
   };
 
+  // Extract headings from the post body for the Table of Contents
+  const tocHeadings = extractHeadings(post.bodyJSON as JSONContent | null);
+
   return (
     <>
       <script
@@ -129,11 +133,19 @@ export default async function BlogPostPage({ params }: Props) {
       />
       <AnalyticsTracker postId={String(post._id)} />
 
-      <div className="xl:grid xl:grid-cols-[220px_1fr] xl:gap-10 max-w-6xl mx-auto">
-        {/* Left sidebar: Table of Contents (hidden on small screens) */}
-        <aside className="hidden xl:block">
-          <TableOfContents />
-        </aside>
+      <div
+        className={
+          tocHeadings.length > 0
+            ? "xl:grid xl:grid-cols-[220px_1fr] xl:gap-10 max-w-6xl mx-auto"
+            : "max-w-6xl mx-auto"
+        }
+      >
+        {/* Left sidebar: Table of Contents (only rendered when headings exist) */}
+        {tocHeadings.length > 0 && (
+          <aside className="hidden xl:block">
+            <TableOfContents headings={tocHeadings} />
+          </aside>
+        )}
 
         <article>
         {/* Header */}
