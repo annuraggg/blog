@@ -153,6 +153,9 @@ export default function PostEditor({ post }: Props) {
   }, [slug, post?._id]);
 
   // Cover image upload
+  const [coverImageMethod, setCoverImageMethod] = useState<"upload" | "url">(
+    "upload",
+  );
   const [coverUploading, setCoverUploading] = useState(false);
   const [coverUrlInput, setCoverUrlInput] = useState(post?.coverImage ?? "");
   const coverFileRef = useRef<HTMLInputElement>(null);
@@ -311,7 +314,7 @@ export default function PostEditor({ post }: Props) {
           : undefined,
       publishDate:
         effectiveStatus === "published" && publishDate
-          ? publishDate
+          ? new Date(publishDate).toISOString()
           : undefined,
       sendNewsletter,
     };
@@ -335,9 +338,15 @@ export default function PostEditor({ post }: Props) {
       }
 
       const data = (await res.json()) as { _id?: string; id?: string };
-      toast.success(isEdit ? "Post updated successfully." : "Post created successfully.");
-      router.push(`/admin/posts/${data._id ?? data.id}/edit`);
-      router.refresh();
+      if (isEdit) {
+        // Stay on the editor page with a success toast
+        toast.success("Post updated successfully.");
+        router.refresh();
+      } else {
+        // Redirect to the new post's edit page
+        toast.success("Post created successfully.");
+        router.push(`/admin/posts/${data._id ?? data.id}/edit`);
+      }
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "An unexpected error occurred.",
@@ -445,57 +454,85 @@ export default function PostEditor({ post }: Props) {
                 Cover Image
               </h2>
 
-              {/* File upload */}
-              <div>
-                <label className={labelCls}>Upload file</label>
-                <input
-                  ref={coverFileRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  className="hidden"
-                  onChange={handleCoverFileChange}
-                />
+              {/* Method toggle */}
+              <div className="flex rounded-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden text-xs">
                 <button
                   type="button"
-                  onClick={() => coverFileRef.current?.click()}
-                  disabled={coverUploading}
-                  className="w-full px-3 py-2 text-sm border border-dashed border-zinc-300 dark:border-zinc-600 rounded-lg text-zinc-500 dark:text-zinc-400 hover:border-zinc-500 dark:hover:border-zinc-400 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  onClick={() => setCoverImageMethod("upload")}
+                  className={`flex-1 py-1.5 font-medium transition-colors ${
+                    coverImageMethod === "upload"
+                      ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
+                      : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                  }`}
                 >
-                  {coverUploading ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Uploading…
-                    </>
-                  ) : (
-                    "Choose image file"
-                  )}
+                  Upload File
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCoverImageMethod("url")}
+                  className={`flex-1 py-1.5 font-medium transition-colors ${
+                    coverImageMethod === "url"
+                      ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
+                      : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                  }`}
+                >
+                  Paste URL
                 </button>
               </div>
 
-              {/* URL input */}
-              <div>
-                <label className={labelCls}>Or paste URL</label>
-                <div className="flex gap-2">
+              {/* File upload */}
+              {coverImageMethod === "upload" && (
+                <div>
                   <input
-                    type="url"
-                    value={coverUrlInput}
-                    onChange={(e) => setCoverUrlInput(e.target.value)}
-                    placeholder="https://..."
-                    className={`${inputCls} flex-1`}
+                    ref={coverFileRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={handleCoverFileChange}
                   />
                   <button
                     type="button"
-                    onClick={handleCoverUrlSubmit}
-                    disabled={coverUploading || !coverUrlInput.trim()}
-                    className="px-3 py-2 text-xs bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-40 whitespace-nowrap flex items-center gap-1.5"
+                    onClick={() => coverFileRef.current?.click()}
+                    disabled={coverUploading}
+                    className="w-full px-3 py-2 text-sm border border-dashed border-zinc-300 dark:border-zinc-600 rounded-lg text-zinc-500 dark:text-zinc-400 hover:border-zinc-500 dark:hover:border-zinc-400 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {coverUploading ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : null}
-                    Use URL
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Uploading…
+                      </>
+                    ) : (
+                      "Choose image file"
+                    )}
                   </button>
                 </div>
-              </div>
+              )}
+
+              {/* URL input */}
+              {coverImageMethod === "url" && (
+                <div>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={coverUrlInput}
+                      onChange={(e) => setCoverUrlInput(e.target.value)}
+                      placeholder="https://..."
+                      className={`${inputCls} flex-1`}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCoverUrlSubmit}
+                      disabled={coverUploading || !coverUrlInput.trim()}
+                      className="px-3 py-2 text-xs bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-40 whitespace-nowrap flex items-center gap-1.5"
+                    >
+                      {coverUploading ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : null}
+                      Use URL
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Preview */}
               {coverImage && (
@@ -645,20 +682,18 @@ export default function PostEditor({ post }: Props) {
                 </div>
               )}
 
-              {status === "published" && (
-                <div>
-                  <label className={labelCls}>Publish Date (backdate)</label>
-                  <input
-                    type="datetime-local"
-                    value={publishDate}
-                    onChange={(e) => setPublishDate(e.target.value)}
-                    className={inputCls}
-                  />
-                  <p className="text-xs text-zinc-400 mt-1">
-                    Leave empty to use the current date/time.
-                  </p>
-                </div>
-              )}
+              <div>
+                <label className={labelCls}>Publish Date (backdate)</label>
+                <input
+                  type="datetime-local"
+                  value={publishDate}
+                  onChange={(e) => setPublishDate(e.target.value)}
+                  className={inputCls}
+                />
+                <p className="text-xs text-zinc-400 mt-1">
+                  Leave empty to use the current date/time.
+                </p>
+              </div>
 
               <label className="flex items-center gap-2 cursor-pointer">
                 <input

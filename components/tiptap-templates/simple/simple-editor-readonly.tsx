@@ -15,6 +15,8 @@ import { Superscript } from "@tiptap/extension-superscript";
 import { Selection } from "@tiptap/extensions";
 import { Markdown } from "tiptap-markdown";
 import { Mathematics } from "@tiptap/extension-mathematics";
+import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
+import { createLowlight, all } from "lowlight";
 
 import { HorizontalRule } from "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension";
 
@@ -27,6 +29,8 @@ import "@/components/tiptap-node/heading-node/heading-node.scss";
 import "@/components/tiptap-node/paragraph-node/paragraph-node.scss";
 
 import "@/components/tiptap-templates/simple/simple-editor.scss";
+
+const lowlight = createLowlight(all);
 
 export function ReadOnlyEditor({
   content,
@@ -46,8 +50,9 @@ export function ReadOnlyEditor({
     extensions: [
       StarterKit.configure({
         horizontalRule: false,
+        codeBlock: false,
         link: {
-          openOnClick: true, // allow clicking links
+          openOnClick: true,
         },
       }),
       HorizontalRule,
@@ -67,6 +72,7 @@ export function ReadOnlyEditor({
       Mathematics.configure({
         katexOptions: { throwOnError: false },
       }),
+      CodeBlockLowlight.configure({ lowlight }),
     ],
 
     content,
