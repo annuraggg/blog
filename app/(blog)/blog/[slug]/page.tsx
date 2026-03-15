@@ -147,6 +147,13 @@ export default async function BlogPostPage({ params }: Props) {
         )}
 
         <article>
+          {/* Mobile TOC – collapsible dropdown, hidden on xl+ where the sidebar is shown */}
+          {tocHeadings.length > 0 && (
+            <div className="xl:hidden mb-6">
+              <TableOfContents headings={tocHeadings} mobile />
+            </div>
+          )}
+
           {/* Header */}
           <header className="mb-8">
             {post.series && (
