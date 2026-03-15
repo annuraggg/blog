@@ -6,10 +6,11 @@ import { connectDB } from "@/lib/db";
 import Post from "@/lib/models/Post";
 import Comments from "@/components/Comments";
 import LikeButton from "@/components/LikeButton";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import Editor from "@/components/ReadOnlyEditor";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
 import RelatedPosts from "@/components/RelatedPosts";
+import TableOfContents from "@/components/TableOfContents";
 import type { JSONContent } from "@tiptap/core";
 
 interface Props {
@@ -128,7 +129,13 @@ export default async function BlogPostPage({ params }: Props) {
       />
       <AnalyticsTracker postId={String(post._id)} />
 
-      <article className="max-w-4xl mx-auto">
+      <div className="xl:grid xl:grid-cols-[220px_1fr] xl:gap-10 max-w-6xl mx-auto">
+        {/* Left sidebar: Table of Contents (hidden on small screens) */}
+        <aside className="hidden xl:block">
+          <TableOfContents />
+        </aside>
+
+        <article>
         {/* Header */}
         <header className="mb-8">
           {post.series && (
@@ -179,7 +186,10 @@ export default async function BlogPostPage({ params }: Props) {
               <div className="flex items-center gap-2 text-xs text-zinc-400">
                 {post.publishDate && (
                   <time dateTime={post.publishDate.toISOString()}>
-                    {format(new Date(post.publishDate), "MMMM d, yyyy")}
+                    {format(
+                      parseISO(post.publishDate.toISOString().slice(0, 10)),
+                      "MMMM d, yyyy",
+                    )}
                   </time>
                 )}
                 <span>·</span>
@@ -309,7 +319,8 @@ export default async function BlogPostPage({ params }: Props) {
 
         {/* Comments */}
         <Comments postId={String(post._id)} />
-      </article>
+        </article>
+      </div>
     </>
   );
 }

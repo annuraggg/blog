@@ -16,6 +16,8 @@ import { Superscript } from "@tiptap/extension-superscript";
 import { Selection } from "@tiptap/extensions";
 import { Markdown } from "tiptap-markdown";
 import { Mathematics } from "@tiptap/extension-mathematics";
+import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
+import { createLowlight, common } from "lowlight";
 
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button";
@@ -72,6 +74,8 @@ import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils";
 
 // --- Styles ---
 import "@/components/tiptap-templates/simple/simple-editor.scss";
+
+const lowlight = createLowlight(common);
 
 const MainToolbarContent = ({
   onHighlighterClick,
@@ -211,6 +215,7 @@ export function SimpleEditor({
     extensions: [
       StarterKit.configure({
         horizontalRule: false,
+        codeBlock: false,
         link: {
           openOnClick: false,
           enableClickSelection: true,
@@ -228,6 +233,7 @@ export function SimpleEditor({
       Selection,
       Markdown.configure({ html: true, tightLists: true }),
       Mathematics.configure({ katexOptions: { throwOnError: false } }),
+      CodeBlockLowlight.configure({ lowlight }),
       ImageUploadNode.configure({
         accept: "image/*",
         maxSize: MAX_FILE_SIZE,

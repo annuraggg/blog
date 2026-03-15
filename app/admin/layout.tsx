@@ -7,7 +7,7 @@ import AdminNavLinks from "@/components/admin/AdminNavLinks";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const session = await auth();
-  if (!session || !["admin", "editor"].includes(session.user.role)) {
+  if (!session || !["admin", "author", "editor"].includes(session.user.role)) {
     redirect("/auth/signin");
   }
 
@@ -40,7 +40,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         </div>
 
         {/* Nav links (client component for active state) */}
-        <AdminNavLinks />
+        <AdminNavLinks isAdmin={session.user.role === "admin"} />
 
         {/* User profile footer */}
         <div className="px-3 py-3 border-t border-zinc-200 dark:border-zinc-800">
@@ -49,9 +49,9 @@ export default async function AdminLayout({ children }: { children: ReactNode })
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-zinc-800 dark:text-zinc-200 truncate">
+              <Link href="/admin/profile" className="text-xs font-medium text-zinc-800 dark:text-zinc-200 truncate hover:underline">
                 {session.user.name ?? session.user.email}
-              </p>
+              </Link>
               <p className="text-xs text-zinc-400 capitalize">{session.user.role}</p>
             </div>
             <Link

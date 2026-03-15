@@ -9,6 +9,10 @@ import { Superscript } from "@tiptap/extension-superscript";
 import { Subscript } from "@tiptap/extension-subscript";
 import { TaskList, TaskItem } from "@tiptap/extension-list";
 import { Node } from "@tiptap/core";
+import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
+import { createLowlight, all } from "lowlight";
+
+const lowlight = createLowlight(all);
 
 // Minimal server-safe stub for imageUpload nodes (no ReactNodeViewRenderer)
 const ImageUploadNodeStub = Node.create({
@@ -20,7 +24,7 @@ const ImageUploadNodeStub = Node.create({
 });
 
 const extensions = [
-  StarterKit,
+  StarterKit.configure({ codeBlock: false }),
   TextAlign.configure({ types: ["heading", "paragraph"] }),
   Highlight.configure({ multicolor: true }),
   Image,
@@ -30,6 +34,7 @@ const extensions = [
   TaskList,
   TaskItem.configure({ nested: true }),
   ImageUploadNodeStub,
+  CodeBlockLowlight.configure({ lowlight }),
 ];
 
 export function renderTiptapHTML(content: JSONContent): string {

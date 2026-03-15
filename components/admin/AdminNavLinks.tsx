@@ -10,6 +10,7 @@ import {
   MessageSquare,
   BarChart2,
   Users,
+  UserCog,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
     label: "Dashboard",
     icon: LayoutDashboard,
     isActive: (p: string) => p === "/admin",
+    adminOnly: false,
   },
   {
     href: "/admin/posts",
@@ -27,12 +29,14 @@ const NAV_ITEMS = [
     isActive: (p: string) =>
       p === "/admin/posts" ||
       (p.startsWith("/admin/posts/") && p !== "/admin/posts/new"),
+    adminOnly: false,
   },
   {
     href: "/admin/posts/new",
     label: "New Post",
     icon: FilePlus,
     isActive: (p: string) => p === "/admin/posts/new",
+    adminOnly: false,
   },
   {
     href: "/admin/series",
@@ -40,6 +44,7 @@ const NAV_ITEMS = [
     icon: BookOpen,
     isActive: (p: string) =>
       p === "/admin/series" || p.startsWith("/admin/series/"),
+    adminOnly: false,
   },
   {
     href: "/admin/comments",
@@ -47,6 +52,7 @@ const NAV_ITEMS = [
     icon: MessageSquare,
     isActive: (p: string) =>
       p === "/admin/comments" || p.startsWith("/admin/comments/"),
+    adminOnly: false,
   },
   {
     href: "/admin/subscribers",
@@ -54,6 +60,15 @@ const NAV_ITEMS = [
     icon: Users,
     isActive: (p: string) =>
       p === "/admin/subscribers" || p.startsWith("/admin/subscribers/"),
+    adminOnly: true,
+  },
+  {
+    href: "/admin/users",
+    label: "Users",
+    icon: UserCog,
+    isActive: (p: string) =>
+      p === "/admin/users" || p.startsWith("/admin/users/"),
+    adminOnly: true,
   },
   {
     href: "/admin/analytics",
@@ -61,15 +76,16 @@ const NAV_ITEMS = [
     icon: BarChart2,
     isActive: (p: string) =>
       p === "/admin/analytics" || p.startsWith("/admin/analytics/"),
+    adminOnly: false,
   },
 ];
 
-export default function AdminNavLinks() {
+export default function AdminNavLinks({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
 
   return (
     <nav className="flex-1 p-3 space-y-0.5">
-      {NAV_ITEMS.map(({ href, label, icon: Icon, isActive }) => {
+      {NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map(({ href, label, icon: Icon, isActive }) => {
         const active = isActive(pathname);
         return (
           <Link

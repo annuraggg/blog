@@ -36,7 +36,7 @@ export async function PUT(
   const { id } = await params;
   try {
     const session = await auth();
-    if (!session || !["admin", "editor"].includes(session.user.role)) {
+    if (!session || !["admin", "author", "editor"].includes(session.user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -45,6 +45,14 @@ export async function PUT(
     const existing = await Post.findById(id);
     if (!existing)
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // Authors can only edit their own posts
+    if (
+      !["admin", "editor"].includes(session.user.role) &&
+      String(existing.author) !== String(session.user.id)
+    ) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     // Require cover image when publishing
     const effectiveCoverImage = body.coverImage ?? existing.coverImage;
