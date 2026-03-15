@@ -48,7 +48,6 @@ export async function PATCH(
 
     // If random inflation is being enabled, generate realistic random values
     if (randomInflation === true) {
-      const baseViews = post.viewCount + (inflatedViews ?? post.inflatedViews);
       const extraViews = randomBetween(50, 500);
       inflatedViews = (inflatedViews ?? post.inflatedViews) + extraViews;
       // Likes are a realistic 2–15% of total views
@@ -59,7 +58,6 @@ export async function PATCH(
         0,
         Math.min(maxLikes - post.likeCount, inflatedViews),
       );
-      void baseViews;
     }
 
     // Validate: inflated likes must not cause total likes to exceed total views

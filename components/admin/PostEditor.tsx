@@ -268,10 +268,6 @@ export default function PostEditor({ post, isAdmin = false }: Props) {
         toast.error("Inflated likes must be a non-negative number.");
         return;
       }
-      if (likes > views) {
-        toast.error("Inflated likes cannot exceed inflated views.");
-        return;
-      }
       setInflationSaving(true);
       try {
         const payload: Record<string, unknown> = {
