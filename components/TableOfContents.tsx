@@ -1,50 +1,41 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { TocItem } from "@/lib/tiptapUtils";
 
-interface TocItem {
-  id: string;
-  text: string;
-  level: number;
+interface Props {
+  headings: TocItem[];
 }
 
-export default function TableOfContents() {
-  const [items, setItems] = useState<TocItem[]>([]);
+export default function TableOfContents({ headings }: Props) {
   const [activeId, setActiveId] = useState<string>("");
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
-    // Parse headings from the article
-    const headings = Array.from(
-      document.querySelectorAll<HTMLElement>(
-        "article h1, article h2, article h3, article h4",
-      ),
-    );
-
     if (headings.length === 0) return;
 
-    // Ensure each heading has an id
-    headings.forEach((h, i) => {
-      if (!h.id) {
-        h.id = h.textContent
-          ? h.textContent
-              .toLowerCase()
-              .trim()
-              .replace(/[^a-z0-9\s-]/g, "")
-              .replace(/\s+/g, "-")
-              .replace(/-+/g, "-")
-          : `heading-${i}`;
+    // Locate the Tiptap read-only editor container
+    const container = document.querySelector<HTMLElement>(".simple-editor");
+    if (!container) return;
+
+    // Assign stable IDs to DOM headings in document order.
+    // Tiptap renders headings in the same order as the JSONContent document,
+    // so the index-based mapping is reliable for a read-only editor.
+    // A text-content check is included as an extra guard.
+    const domHeadings = Array.from(
+      container.querySelectorAll<HTMLElement>("h1, h2, h3, h4, h5, h6"),
+    );
+    headings.forEach((item, i) => {
+      const el = domHeadings[i];
+      if (el && el.textContent?.trim() === item.text.trim()) {
+        el.id = item.id;
+      } else if (el && !el.id) {
+        // fallback: assign even if text doesn't match exactly
+        el.id = item.id;
       }
     });
 
-    const tocItems: TocItem[] = headings.map((h) => ({
-      id: h.id,
-      text: h.textContent ?? "",
-      level: parseInt(h.tagName[1], 10),
-    }));
-    setItems(tocItems);
-
-    // Intersection observer for active section highlighting
+    // Track active heading via IntersectionObserver
     observerRef.current = new IntersectionObserver(
       (entries) => {
         const visible = entries.filter((e) => e.isIntersecting);
@@ -54,24 +45,24 @@ export default function TableOfContents() {
       },
       { rootMargin: "-10% 0px -60% 0px", threshold: 0 },
     );
-
-    headings.forEach((h) => observerRef.current?.observe(h));
+    domHeadings.forEach((h) => observerRef.current?.observe(h));
 
     return () => {
       observerRef.current?.disconnect();
     };
-  }, []);
+  }, [headings]);
 
-  if (items.length === 0) return null;
+  if (headings.length === 0) return null;
 
   const handleClick = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
+      history.pushState(null, "", `#${id}`);
     }
   };
 
-  const minLevel = Math.min(...items.map((i) => i.level));
+  const minLevel = Math.min(...headings.map((i) => i.level));
 
   return (
     <nav
@@ -82,7 +73,7 @@ export default function TableOfContents() {
         On this page
       </p>
       <ul className="space-y-1">
-        {items.map((item) => {
+        {headings.map((item) => {
           const indent = (item.level - minLevel) * 12;
           const isActive = activeId === item.id;
           return (
