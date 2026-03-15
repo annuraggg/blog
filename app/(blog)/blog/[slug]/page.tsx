@@ -75,6 +75,9 @@ export default async function BlogPostPage({ params }: Props) {
   if (!post) notFound();
   if (post.status === "draft" || post.status === "archived") notFound();
 
+  const displayViews = (post.viewCount ?? 0) + (post.inflatedViews ?? 0);
+  const displayLikes = (post.likeCount ?? 0) + (post.inflatedLikes ?? 0);
+
   const tocHeadings = extractHeadings(post.bodyJSON as JSONContent | null);
 
   // Get series posts for navigation
@@ -189,18 +192,23 @@ export default async function BlogPostPage({ params }: Props) {
 
             <div className="flex items-center gap-4">
               {author.image && (
-                <Image
-                  src={author.image}
-                  alt={author.name}
-                  width={40}
-                  height={40}
-                  className="rounded-full"
-                />
+                <Link href={`/author/${encodeURIComponent(author.name)}`}>
+                  <Image
+                    src={author.image}
+                    alt={author.name}
+                    width={40}
+                    height={40}
+                    className="rounded-full"
+                  />
+                </Link>
               )}
               <div>
-                <p className="text-sm font-medium text-zinc-900 dark:text-white">
+                <Link
+                  href={`/author/${encodeURIComponent(author.name)}`}
+                  className="text-sm font-medium text-zinc-900 dark:text-white hover:underline"
+                >
                   {author.name}
-                </p>
+                </Link>
                 <div className="flex items-center gap-2 text-xs text-zinc-400">
                   {post.publishDate && (
                     <time dateTime={post.publishDate.toISOString()}>
@@ -236,7 +244,8 @@ export default async function BlogPostPage({ params }: Props) {
 
           {/* Like button */}
           <div className="mt-10 flex items-center gap-4 cursor-pointer">
-            <LikeButton postId={String(post._id)} likeCount={post.likeCount} />
+            <LikeButton postId={String(post._id)} likeCount={displayLikes} />
+            <span className="text-sm text-zinc-400">{displayViews} views</span>
           </div>
 
           {/* Series navigation */}
@@ -280,18 +289,26 @@ export default async function BlogPostPage({ params }: Props) {
           {author.bio && (
             <div className="mt-12 pt-8 border-t border-zinc-200 dark:border-zinc-800 flex gap-4">
               {author.image && (
-                <Image
-                  src={author.image}
-                  alt={author.name}
-                  width={56}
-                  height={56}
-                  className="rounded-full shrink-0"
-                />
+                <Link
+                  href={`/author/${encodeURIComponent(author.name)}`}
+                  className="shrink-0"
+                >
+                  <Image
+                    src={author.image}
+                    alt={author.name}
+                    width={56}
+                    height={56}
+                    className="rounded-full"
+                  />
+                </Link>
               )}
               <div>
-                <p className="font-semibold text-zinc-900 dark:text-white mb-1">
+                <Link
+                  href={`/author/${encodeURIComponent(author.name)}`}
+                  className="font-semibold text-zinc-900 dark:text-white mb-1 hover:underline block"
+                >
                   {author.name}
-                </p>
+                </Link>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
                   {author.bio}
                 </p>

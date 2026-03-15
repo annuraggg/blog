@@ -47,7 +47,7 @@ export default async function BlogPage({ searchParams }: Props) {
       .populate("author", "name image")
       .populate("series", "title slug")
       .select(
-        "title subheading slug coverImage tags readingTime publishDate author series viewCount",
+        "title subheading slug coverImage tags readingTime publishDate author series viewCount inflatedViews",
       )
       .lean(),
     Post.countDocuments(filter),
@@ -146,7 +146,7 @@ export default async function BlogPage({ searchParams }: Props) {
                 <span>·</span>
                 <span>{post.readingTime} min read</span>
                 <span>·</span>
-                <span>{post.viewCount} views</span>
+                <span>{(post.viewCount ?? 0) + (post.inflatedViews ?? 0)} views</span>
               </div>
             </div>
           </article>
