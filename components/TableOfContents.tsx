@@ -56,6 +56,7 @@ export default function TableOfContents({ headings }: Props) {
 
   const handleClick = (id: string) => {
     const el = document.getElementById(id);
+    console.log("Scrolling to:", id, el);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
       history.pushState(null, "", `#${id}`);
