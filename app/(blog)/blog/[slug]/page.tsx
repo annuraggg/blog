@@ -11,6 +11,7 @@ import Editor from "@/components/ReadOnlyEditor";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
 import RelatedPosts from "@/components/RelatedPosts";
 import TableOfContents from "@/components/TableOfContents";
+import { extractHeadings } from "@/lib/tiptapUtils";
 import type { JSONContent } from "@tiptap/core";
 
 interface Props {
@@ -121,6 +122,9 @@ export default async function BlogPostPage({ params }: Props) {
     author: { "@type": "Person", name: author.name },
   };
 
+  // Extract headings from the post body for the Table of Contents
+  const tocHeadings = extractHeadings(post.bodyJSON as JSONContent | null);
+
   return (
     <>
       <script
@@ -129,196 +133,204 @@ export default async function BlogPostPage({ params }: Props) {
       />
       <AnalyticsTracker postId={String(post._id)} />
 
-      <div className="xl:grid xl:grid-cols-[220px_1fr] xl:gap-10 max-w-6xl mx-auto">
-        {/* Left sidebar: Table of Contents (hidden on small screens) */}
-        <aside className="hidden xl:block">
-          <TableOfContents />
-        </aside>
+      <div
+        className={
+          tocHeadings.length > 0
+            ? "xl:grid xl:grid-cols-[220px_1fr] xl:gap-10 max-w-6xl mx-auto"
+            : "max-w-6xl mx-auto"
+        }
+      >
+        {/* Left sidebar: Table of Contents (only rendered when headings exist) */}
+        {tocHeadings.length > 0 && (
+          <aside className="hidden xl:block">
+            <TableOfContents headings={tocHeadings} />
+          </aside>
+        )}
 
         <article>
-        {/* Header */}
-        <header className="mb-8">
-          {post.series && (
-            <Link
-              href={`/series/${(post.series as unknown as { slug: string }).slug}`}
-              className="text-sm text-zinc-500 dark:text-zinc-400 hover:underline mb-3 block"
-            >
-              ← {(post.series as unknown as { title: string }).title}
-            </Link>
-          )}
-
-          <div className="flex flex-wrap gap-2 mb-3">
-            {post.tags.map((tag) => (
+          {/* Header */}
+          <header className="mb-8">
+            {post.series && (
               <Link
-                key={tag}
-                href={`/blog?tag=${tag}`}
-                className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                href={`/series/${(post.series as unknown as { slug: string }).slug}`}
+                className="text-sm text-zinc-500 dark:text-zinc-400 hover:underline mb-3 block"
               >
-                #{tag}
+                ← {(post.series as unknown as { title: string }).title}
               </Link>
-            ))}
-          </div>
+            )}
 
-          <h1 className="text-3xl md:text-5xl font-bold text-zinc-900 dark:text-white mb-4 leading-tight">
-            {post.title}
-          </h1>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {post.tags.map((tag) => (
+                <Link
+                  key={tag}
+                  href={`/blog?tag=${tag}`}
+                  className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                >
+                  #{tag}
+                </Link>
+              ))}
+            </div>
 
-          {post.subheading && (
-            <p className="text-xl text-zinc-500 dark:text-zinc-400 mb-6">
-              {post.subheading}
-            </p>
+            <h1 className="text-3xl md:text-5xl font-bold text-zinc-900 dark:text-white mb-4 leading-tight">
+              {post.title}
+            </h1>
+
+            {post.subheading && (
+              <p className="text-xl text-zinc-500 dark:text-zinc-400 mb-6">
+                {post.subheading}
+              </p>
+            )}
+
+            <div className="flex items-center gap-4">
+              {author.image && (
+                <Image
+                  src={author.image}
+                  alt={author.name}
+                  width={40}
+                  height={40}
+                  className="rounded-full"
+                />
+              )}
+              <div>
+                <p className="text-sm font-medium text-zinc-900 dark:text-white">
+                  {author.name}
+                </p>
+                <div className="flex items-center gap-2 text-xs text-zinc-400">
+                  {post.publishDate && (
+                    <time dateTime={post.publishDate.toISOString()}>
+                      {format(
+                        parseISO(post.publishDate.toISOString().slice(0, 10)),
+                        "MMMM d, yyyy",
+                      )}
+                    </time>
+                  )}
+                  <span>·</span>
+                  <span>{post.readingTime} min read</span>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {post?.coverImage ? (
+            <div className="mb-8 -mx-4 md:mx-0">
+              <Image
+                src={post.coverImage}
+                alt={post.coverImageAlt ?? post.title}
+                width={800}
+                height={400}
+                className="w-full rounded-none md:rounded-xl object-cover max-h-96"
+                unoptimized
+              />
+            </div>
+          ) : (
+            <></>
           )}
 
-          <div className="flex items-center gap-4">
-            {author.image && (
-              <Image
-                src={author.image}
-                alt={author.name}
-                width={40}
-                height={40}
-                className="rounded-full"
-              />
-            )}
-            <div>
-              <p className="text-sm font-medium text-zinc-900 dark:text-white">
-                {author.name}
-              </p>
-              <div className="flex items-center gap-2 text-xs text-zinc-400">
-                {post.publishDate && (
-                  <time dateTime={post.publishDate.toISOString()}>
-                    {format(
-                      parseISO(post.publishDate.toISOString().slice(0, 10)),
-                      "MMMM d, yyyy",
-                    )}
-                  </time>
-                )}
-                <span>·</span>
-                <span>{post.readingTime} min read</span>
-              </div>
-            </div>
+          <Editor content={post.bodyJSON as JSONContent} />
+
+          {/* Like button */}
+          <div className="mt-10 flex items-center gap-4 cursor-pointer">
+            <LikeButton postId={String(post._id)} likeCount={post.likeCount} />
           </div>
-        </header>
 
-        {post?.coverImage ? (
-          <div className="mb-8 -mx-4 md:mx-0">
-            <Image
-              src={post.coverImage}
-              alt={post.coverImageAlt ?? post.title}
-              width={800}
-              height={400}
-              className="w-full rounded-none md:rounded-xl object-cover max-h-96"
-              unoptimized
-            />
-          </div>
-        ) : (
-          <></>
-        )}
-
-        <Editor content={post.bodyJSON as JSONContent} />
-
-        {/* Like button */}
-        <div className="mt-10 flex items-center gap-4 cursor-pointer">
-          <LikeButton postId={String(post._id)} likeCount={post.likeCount} />
-        </div>
-
-        {/* Series navigation */}
-        {seriesPosts.length > 1 && (
-          <nav className="mt-12 pt-8 border-t border-zinc-200 dark:border-zinc-800">
-            <p className="text-sm text-zinc-500 mb-4 font-medium">
-              More in this series
-            </p>
-            <div className="flex justify-between gap-4">
-              {prevPost ? (
-                <Link
-                  href={`/blog/${prevPost.slug}`}
-                  className="flex-1 p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors"
-                >
-                  <p className="text-xs text-zinc-400 mb-1">← Previous</p>
-                  <p className="text-sm font-medium text-zinc-900 dark:text-white">
-                    {prevPost.title}
-                  </p>
-                </Link>
-              ) : (
-                <div className="flex-1" />
-              )}
-              {nextPost ? (
-                <Link
-                  href={`/blog/${nextPost.slug}`}
-                  className="flex-1 p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors text-right"
-                >
-                  <p className="text-xs text-zinc-400 mb-1">Next →</p>
-                  <p className="text-sm font-medium text-zinc-900 dark:text-white">
-                    {nextPost.title}
-                  </p>
-                </Link>
-              ) : (
-                <div className="flex-1" />
-              )}
-            </div>
-          </nav>
-        )}
-
-        {/* Author bio */}
-        {author.bio && (
-          <div className="mt-12 pt-8 border-t border-zinc-200 dark:border-zinc-800 flex gap-4">
-            {author.image && (
-              <Image
-                src={author.image}
-                alt={author.name}
-                width={56}
-                height={56}
-                className="rounded-full shrink-0"
-              />
-            )}
-            <div>
-              <p className="font-semibold text-zinc-900 dark:text-white mb-1">
-                {author.name}
+          {/* Series navigation */}
+          {seriesPosts.length > 1 && (
+            <nav className="mt-12 pt-8 border-t border-zinc-200 dark:border-zinc-800">
+              <p className="text-sm text-zinc-500 mb-4 font-medium">
+                More in this series
               </p>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                {author.bio}
-              </p>
-              <div className="flex gap-3 mt-2">
-                {author.website && (
-                  <a
-                    href={author.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+              <div className="flex justify-between gap-4">
+                {prevPost ? (
+                  <Link
+                    href={`/blog/${prevPost.slug}`}
+                    className="flex-1 p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors"
                   >
-                    Website
-                  </a>
+                    <p className="text-xs text-zinc-400 mb-1">← Previous</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-white">
+                      {prevPost.title}
+                    </p>
+                  </Link>
+                ) : (
+                  <div className="flex-1" />
                 )}
-                {author.twitter && (
-                  <a
-                    href={`https://twitter.com/${author.twitter}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                {nextPost ? (
+                  <Link
+                    href={`/blog/${nextPost.slug}`}
+                    className="flex-1 p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors text-right"
                   >
-                    Twitter
-                  </a>
+                    <p className="text-xs text-zinc-400 mb-1">Next →</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-white">
+                      {nextPost.title}
+                    </p>
+                  </Link>
+                ) : (
+                  <div className="flex-1" />
                 )}
               </div>
+            </nav>
+          )}
+
+          {/* Author bio */}
+          {author.bio && (
+            <div className="mt-12 pt-8 border-t border-zinc-200 dark:border-zinc-800 flex gap-4">
+              {author.image && (
+                <Image
+                  src={author.image}
+                  alt={author.name}
+                  width={56}
+                  height={56}
+                  className="rounded-full shrink-0"
+                />
+              )}
+              <div>
+                <p className="font-semibold text-zinc-900 dark:text-white mb-1">
+                  {author.name}
+                </p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  {author.bio}
+                </p>
+                <div className="flex gap-3 mt-2">
+                  {author.website && (
+                    <a
+                      href={author.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                    >
+                      Website
+                    </a>
+                  )}
+                  {author.twitter && (
+                    <a
+                      href={`https://twitter.com/${author.twitter}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                    >
+                      Twitter
+                    </a>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Related posts */}
-        <RelatedPosts
-          posts={relatedPosts.map((p) => ({
-            _id: String(p._id),
-            title: p.title,
-            slug: p.slug,
-            subheading: p.subheading,
-            coverImage: p.coverImage,
-            tags: p.tags,
-            readingTime: p.readingTime,
-            publishDate: p.publishDate,
-          }))}
-        />
+          {/* Related posts */}
+          <RelatedPosts
+            posts={relatedPosts.map((p) => ({
+              _id: String(p._id),
+              title: p.title,
+              slug: p.slug,
+              subheading: p.subheading,
+              coverImage: p.coverImage,
+              tags: p.tags,
+              readingTime: p.readingTime,
+              publishDate: p.publishDate,
+            }))}
+          />
 
-        {/* Comments */}
-        <Comments postId={String(post._id)} />
+          {/* Comments */}
+          <Comments postId={String(post._id)} />
         </article>
       </div>
     </>
