@@ -11,8 +11,8 @@ import Editor from "@/components/ReadOnlyEditor";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
 import RelatedPosts from "@/components/RelatedPosts";
 import TableOfContents from "@/components/TableOfContents";
-import { extractHeadings } from "@/lib/tiptapUtils";
 import type { JSONContent } from "@tiptap/core";
+import { extractHeadings } from "@/lib/tiptapUtils";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -75,6 +75,8 @@ export default async function BlogPostPage({ params }: Props) {
   if (!post) notFound();
   if (post.status === "draft" || post.status === "archived") notFound();
 
+  const tocHeadings = extractHeadings(post.bodyJSON as JSONContent | null);
+
   // Get series posts for navigation
   let seriesPosts: { slug: string; title: string; seriesOrder?: number }[] = [];
   if (post.series) {
@@ -122,9 +124,6 @@ export default async function BlogPostPage({ params }: Props) {
     author: { "@type": "Person", name: author.name },
   };
 
-  // Extract headings from the post body for the Table of Contents
-  const tocHeadings = extractHeadings(post.bodyJSON as JSONContent | null);
-
   return (
     <>
       <script
@@ -137,7 +136,7 @@ export default async function BlogPostPage({ params }: Props) {
         className={
           tocHeadings.length > 0
             ? "xl:grid xl:grid-cols-[220px_1fr] xl:gap-10 max-w-6xl mx-auto"
-            : "max-w-6xl mx-auto"
+            : "max-w-4xl mx-auto"
         }
       >
         {/* Left sidebar: Table of Contents (only rendered when headings exist) */}
@@ -218,7 +217,7 @@ export default async function BlogPostPage({ params }: Props) {
                 alt={post.coverImageAlt ?? post.title}
                 width={800}
                 height={400}
-                className="w-full rounded-none md:rounded-xl object-cover max-h-96"
+                className="w-full rounded-none md:rounded-xl object-cover "
                 unoptimized
               />
             </div>
